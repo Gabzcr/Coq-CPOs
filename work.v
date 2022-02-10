@@ -7,25 +7,68 @@ Require Import Psatz.
 Require Export Setoid Morphisms.
 Set Implicit Arguments.
 
+(*
+Definition even_type : Type := {n:nat | Arith.Even.even n}.
+Lemma is_not_odd (n:even_type) : ~ Arith.Even.odd (proj1_sig n).
+Proof.
+  destruct n. cbn. intuition.
+Admitted.
+*)
+
+(*
+Definition Directed_generalized X (D:X->Prop) (leq : relation X) := 
+  forall x y, D x -> D y -> exists z, D z /\ leq x z /\ leq y z.
+Definition directed_set_generalized X (Directed : (X -> Prop) -> Prop) : Type :=
+  {Dbody : X -> Prop | Directed Dbody}.
+Definition Dbody_generalized X P (D:sig P) : X -> Prop :=
+  proj1_sig D.
+*)
 
 Class CPO (X: Type) := {
   weq: relation X;
   leq: relation X;
-  sup: (X -> Prop) -> X;
+  Directed (D: X -> Prop) := forall x y, D x -> D y -> exists z, D z /\ leq x z /\ leq y z;
+  directed_set : Type := {Dbody : X -> Prop | Directed Dbody};
+  Dbody (D:directed_set) : X -> Prop :=  proj1_sig D;
+  sup: directed_set -> X;
+  PreOrder_leq:> PreOrder leq;
+  weq_spec: forall x y, weq x y <-> (leq x y /\ leq y x);
+  sup_spec: forall D z, (leq (sup D) z <-> forall (y:X), (Dbody D) y -> leq y z);
+                        }.
+
+(*
+Class CPO (X: Type) := {
+  weq: relation X;
+  leq: relation X;
+  sup: (X -> Prop) -> X -> Prop;
   PreOrder_leq:> PreOrder leq;
   Directed (D: X -> Prop) := forall x y, D x -> D y -> exists z, D z /\ leq x z /\ leq y z;
   weq_spec: forall x y, weq x y <-> (leq x y /\ leq y x);
-  sup_spec: forall Y z, Directed Y ->  (leq (sup Y) z <-> forall y, Y y -> leq y z);
-                        }.
+  sup_spec: forall D s, sup D s -> forall z, (leq s z <-> forall y, D y -> leq y z);
+  sup_exists: forall D, Directed D -> exists s, sup D s;
+  (*sup_spec: forall Y z, Directed Y ->  (leq (sup Y) z <-> forall y, Y y -> leq y z);*)
+                        }.*)
 
-Class CompleteLattice (X : Type) (L : CPO X) := {
-  sup_spec_lat: forall Y z, leq (sup Y) z <-> forall y, Y y -> leq y z;
+Class CompleteLattice (X : Type) `(L : CPO X) := {
+    sup_lat: (X -> Prop) -> X;
+    sup_spec_lat:  forall Y z, (leq (sup_lat Y) z <-> forall y, Y y -> leq y z);
                                   }.
 Declare Scope CPO.
 Open Scope CPO.
 Infix "==" := weq (at level 70): CPO.
 Infix "<=" := leq: CPO.
 Global Hint Extern 0 => reflexivity: core.
+
+(** * Reversing a CPO *)
+
+Definition reverse_leq X (leq : X -> X -> Prop) : X -> X -> Prop := fun x y => leq y x.
+
+Global Program Instance reverse_CPO (P: CPO X): CPO X := {|
+   weq := weq;
+   leq := reverse_leq leq;
+   sup D := sup (fun z => forall y, (@Dbody X (reverse_CPO X) D y) -> leq z y); 
+   (*Careful ! I dunno which "leq" is used here :/*)
+ |}.
 
 
 (** * Utilities  *)
@@ -50,7 +93,7 @@ Section sup.
  (*Below lemma is necessary for later property.*)
  Lemma directed_symmetry f g : (forall z, f z <-> g z) -> Directed f <-> Directed g.
  Proof.
-  intro H. unfold Directed. setoid_rewrite H. tauto.
+  intro H. unfold Directed. (* unfold Directed_generalized. *)setoid_rewrite H. tauto.
 Qed.
 
 Definition iff_part (f g : X -> Prop) := forall z, f z <-> g z.
@@ -95,22 +138,44 @@ Qed.
  Qed.
  Global Instance sup_weq: Proper (weq ==> weq) sup := op_leq_weq_1.*)
  
- Lemma leq_xsup (D: X -> Prop) y: Directed D -> D y -> y <= sup D.
- Proof. intro H. now apply sup_spec. Qed.
+ Lemma leq_xsup D y: (Dbody D) y -> y <= sup D.
+ Proof. intro H. now apply (sup_spec D). Qed.
  
-  Lemma leq_xsup_lat (D: X -> Prop) y: D y -> y <= sup D.
- Proof. intro H. now apply sup_spec_lat with D. Qed.
+ Lemma leq_xsup_lat (Y:X->Prop) y : Y y -> y <= sup_lat Y.
+ Proof. intro H. now apply (sup_spec_lat Y). Qed.
 
- Definition bot := sup (fun _ => False). (*Warning : with our current definition of directed,
+(*
+Lemma sup_unicity D s1 s2: sup D s1 -> sup D s2 -> s1 == s2.
+Proof.
+  intros. apply weq_spec. split; [apply (sup_spec D s1) | apply (sup_spec D s2)]; try assumption.
+  now apply (sup_spec D s2). now apply (sup_spec D s1).
+Qed.*)
+
+Program Definition empty : directed_set := exist _ (fun _ => False) _.
+Next Obligation.
+unfold Directed. (* unfold Directed_generalized.*) intros. contradict H.
+Defined.
+
+(* Above is better and equivalent, I keep this here to remember what I learned on Sig today *)
+(*
+Lemma empty_is_directed : (Directed (fun _ => False)).
+Proof. unfold Directed. intros. contradict H. Qed.
+Definition empty : directed_set := exist Directed (fun _ => False) empty_is_directed.
+*)
+
+ Definition bot := sup empty. (*Warning : with our current definition of directed,
  bottom exists since empty set is directed. Later, we will want to change that to allow bottom to no exist*)
  Lemma bot_spec: forall x, bot <= x.
  Proof. intro. now apply sup_spec. Qed.
 
- Definition top := sup (fun _ => True).
+ Definition top := sup_lat (fun _ => True).
  Lemma top_spec_lat: forall x, x <= top.
  Proof. intro. now apply leq_xsup_lat. Qed.
 (*Not in CPOs ! We don't want CPOs to have a top, otherwise just word with Complete Lattices already.*)
 
+(* Following section : not really handy for CPOs, since cup and cap only exists if {x,y} is directed, 
+i.e. x and y are comparable. Forget it for now, may be of use later with lattices *)
+(*
  Definition cup x y := sup (fun z => z=x \/ z=y).
  Lemma cup_spec: forall x y z, Directed (fun z => z=x \/ z=y) -> cup x y <= z <-> (x <= z /\ y <= z).
  Proof.
@@ -136,6 +201,20 @@ Qed.
    now intro H; split; rewrite H; apply sup_spec_lat.
    intros. now apply leq_xsup_lat. 
  Qed.
+*)
+
+
+(* --------------- Inf ---------------- *)
+
+(* Now defining an inf is also a problem... Usually we write it as the sup of elements lower than the set,
+but now there is no guarantee an inf exists (even if a sup exists btw).
+Two solutions : 
+1) Define the inf directly in the CPO with "downward" directed sets
+2) Define a "converse" CPO with reversed <= and define it as sup for this CPO.
+--> Then we can make a lemma stating that the inf is actually the sup of lower elements 
+if this set is downward directed. 
+Try solution 2) to not "uselessly" weight down the definition of CPO.*)
+
 
  Definition inf Y := sup (fun z => forall y, Y y -> z <= y).
  Lemma inf_spec: forall Y z, Directed (fun z => forall y, Y y -> z <= y) -> z <= inf Y <-> (forall y, Y y -> z <= y).
