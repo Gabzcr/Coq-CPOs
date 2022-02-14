@@ -794,9 +794,39 @@ Next Obligation.
   destruct Ha. apply (H x). apply H0. apply H0.
 Qed.
 
-
-Definition Increasing (F:@mon X P) := forall (x:X), x <= F x.
+Definition x := mon. Print mon.
+Definition Increasing (F: @mon X P) := forall (x:X), x <= F x.
 Check Increasing.
+
+(*Note : from now on, have to detail the type used for mon, since last instance declared is used to infer type,
+here it is now mon on the CPO of mon.*)
+
+(*
+Set Printing Implicit.
+
+(* Class indexed by a type *)
+Class foo {X : Type} := {bar : X -> X }.
+
+(* Two instances for the class *)
+Context {foo1 : @foo nat}.
+Context {foo2 : @foo (nat -> nat)}.
+
+(* A function indexed by an instance of [foo] *)
+Variable (f : forall {X} {F: @foo X}, Type).
+
+(* The last instance defined has priority: `f`
+   gets implicitly typed at [foo (nat -> nat)] *)
+Definition testf := f.
+Definition testf2 := @f nat _.
+
+(* So naturally the identity over unspecified [f] gets inferred
+   as the identity over [f (nat -> nat)] *)
+Definition test2 (b : f) : f  := b.
+(* But somehow more surprising: the instances of both the argument and the return type are inferred completely independently: explicitly specifying one of the two leads in a type error as the first argument still got typed at [f (nat -> nat)] *)
+Fail Definition test3 (b : f) : @f nat _  := b.
+Fail Definition test3 (b : @f nat _) : f  := b.
+Definition test3 (b : @f nat _) : @f nat _  := b.
+*)
 
 (*Program Definition I := exist _ Increasing _.*)
 
@@ -822,15 +852,27 @@ Proof.
   intro. exists (H_sup bot).
   assert ((comp F H_sup) == H_sup).
   + apply weq_spec. split. apply (sup_spec I). reflexivity. 
-    intro. transitivity (H_sup x). apply H_sup_is_increasing. apply H.
+    intro x. transitivity (H_sup x). apply H_sup_is_increasing. apply H.
     intro. apply H.
   + unfold Fix. now setoid_rewrite (H0 bot).
 Qed.
 
-Definition Invariant F (Y: set X) := included Y (Image F Y).
+Definition Invariant F (Y: set X) := included (Image F Y) Y.
 
-Definition P0 (F:@mon X P) := (fun x => forall Y, Invariant F Y -> Y x). 
+Definition is_subCPO (Q:set X) := forall D, included (Dbody D) Q -> Q (sup D).
+
+Definition P0 (F:@mon X P) := (fun x => forall Y, Invariant F Y -> is_subCPO Y -> Y x). 
 (* intersection of all invariant sub-CPOs *)
+
+Lemma P0_is_invariant_subCPO (F:@mon X P): Invariant F (P0 F) /\ is_subCPO (P0 F).
+Proof.
+  split.
+  + intros x H. inversion H. intros Y Hi Hs. apply Hi. apply from_image. now apply (H0 Y).
+  + intros D H Y Hi Hs. apply Hs. rewrite H. intros x Hx. now apply Hx.
+Qed.
+
+Lemma P0_is_smallest_invariant_subCPO (F:@mon X P) : forall Y, Invariant F Y -> is_subCPO Y -> included (P0 F) Y.
+Proof. intros Y Hi Hs x Hx. now apply Hx. Qed.
 
 Program Definition Φ (F:@mon X P) : @mon (set X) (CPO_parts) :=  (*since def of mon is linked to that of CPOs, need a CPO of parts*)
   {| body X := (fun x => (x = bot \/ (Image F X) x \/ (exists D, included (Dbody D) X /\ x = sup D))) |}.
@@ -845,10 +887,70 @@ Definition P0' F := gfp (Φ F). (* sup_lat (fun x => x <= Φ F x).*)
 Check P0.
 Check P0'.
 
+Instance image_eq (F:@mon X P): Proper (weq ==> weq) (Image F).
+Proof. intros Y1 Y2 HY. split; intro H; inversion H; apply from_image; now apply HY. Qed.
+(*Instance set_incl : Proper (weq ==> iff_part) included.
+Proof. intros Y1 Y2 HY Y3. split; intros Hi x Hx; apply Hi; now apply HY. Qed.*)
+
+Instance set_incl : Proper (weq ==> weq ==> iff) included.
+Proof. intros Y1 Y2 H12 Y3 Y4 H34. split; intros Hi x Hx; apply H34; apply Hi; now apply H12. Qed.
+
+(*Instance test (F:@mon X P) Y : Proper (weq ==> Basics.flip Basics.impl) (included Y).
+Proof. intros Y1 Y2 HY H x Hx. apply HY. now apply H. Qed.*)
+
+Lemma set_eq : forall (f g : set X), f == g -> (pointwise_relation X iff) f g.
+Proof.
+  intros f g H x. split; intro Hh; apply weq_spec in H; destruct H.
+  now apply H. now apply H0.
+Qed.
+
+(*
+Definition appliance (A: Type) := fun (f:A->A) => fun x => f x. About eq. About appliance.
+
+Instance set_eq : Proper (weq ==> (pointwise_relation X iff)) appliance.
+Proof.
+  intros Y1 Y2 HY. split;
+*)
+
+Ltac pointed_rewrite H H' := match type of H with | _ ?x => apply (set_eq H) in H' end.
+  Tactic Notation "prew" hyp(H) "in" hyp(H') := pointed_rewrite H H'.
+
+(*Tactic Notation prew Y1 'in' Y2 := pointed_rewrite Y1 Y2.*)
+
+(*
+Instance test f g: (respectful weq (pointwise_relation Prop iff)) f g.
+
+Instance obvious : Proper (weq ==> Basics.flip Basics.impl) (pointwise_relation iff).
+Lemma equal_sets_give_same_props : forall Y1 Y2, Y1 == Y2 -> forall x, Y1 x <-> Y2 x.
+Proof. intros. split.
+*)
+
 Lemma P0_is_P0' F : (P0 F) == (P0' F).
-Proof. (*dunno why this is true;*)
+Proof.
   apply weq_spec. split.
-  Print leq_gfp.
+  + apply P0_is_smallest_invariant_subCPO. 
+  unfold Invariant. unfold P0'. rewrite gfp_fp at 2.
+  intros x H. right. now left.
+  unfold is_subCPO. unfold P0'. setoid_rewrite gfp_pfp. intros D H. unfold P0'.
+  apply (set_eq (gfp_fp (Φ F))).
+  
+  
+  
+  
+  
+  apply set_eq with (Φ F (gfp (Φ F))). apply gfp_fp. setoid_rewrite gfp_pfp. unfold is_subCPO.
+  
+  apply (weq_spec gfp_fp). assert gfp_fp.
+   apply weq_spec. setoid_rewrite gfp_fp.
+    - intros x Hx. assert ((Φ F) (P0' F) x). right. now left. 
+    Search gfp. assert (Φ F (P0' F) x -> P0' F x). Check gfp_fp. apply gfp_fp.
+    
+     rewrite H. apply H. rewrite gfp_fp.
+    
+     Search gfp. unfold P0'. transitivity gfp_fp. inversion Hx. destruct H as [Y [HY1 HY2]].
+      destruct (HY1 x0). assumption. apply leq_gfp. ; try intuition. rewrite H0.
+  + Print leq_gfp. apply leq_gfp.
+    intros x H. right. left. destruct (H (P0 F)). unfold P0.
    apply leq_xsup_lat. intros x H.
   apply H. intros y Hy. cbn. Search "Image". apply im_eq. Print Image'. destruct Hy. rewrite H0. cbn.
   
