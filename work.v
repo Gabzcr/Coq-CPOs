@@ -261,27 +261,17 @@ Try solution 2) to not "uselessly" weight down the definition of CPO.*)
 (* --> actually, no need for an inf ! We will instead define properties stating that an element is a least
 elements or things like that for the proofs. *)
 
-(*
- Definition inf Y := sup (fun z => forall y, Y y -> z <= y).
- Lemma inf_spec: forall Y z, Directed (fun z => forall y, Y y -> z <= y) -> z <= inf Y <-> (forall y, Y y -> z <= y).
- Proof.
-   intros Y z D. unfold sup. split.
-   intros H y Yy. rewrite H. apply sup_spec. now auto. 
-   intro. now auto.
-   intro. now apply leq_xsup. 
- Qed.
- Lemma inf_spec_lat: forall Y z, z <= inf Y <-> (forall y, Y y -> z <= y).
+
+ Definition inf_lat Y := sup_lat (fun z => forall y, Y y -> z <= y).
+ Lemma inf_spec_lat: forall Y z, z <= inf_lat Y <-> (forall y, Y y -> z <= y).
  Proof.
    intros. unfold sup. split.
    intros H y Yy. rewrite H; apply sup_spec_lat. now auto. 
    intro. now apply leq_xsup_lat.
  Qed.
  
-  Lemma leq_xinf (D: X -> Prop) y: Directed (fun z : X => forall y0 : X, D y0 -> z <= y0) -> D y -> inf D <= y.
- Proof. intro H. now apply inf_spec. Qed.
- Lemma leq_xinf_lat (D: X -> Prop) y: D y -> inf D <= y.
+  Lemma leq_xinf (D: X -> Prop) y:  D y -> inf_lat D <= y.
  Proof. intro H. now apply inf_spec_lat with D. Qed.
- *)
  
  (** other properties of binary joins *)
  (* Still cups, still not handy now*)
@@ -467,14 +457,22 @@ Context {X} `{L: CompleteLattice X}.
  Variable b: mon.
 
  Definition gfp := sup_lat (fun x => x <= b x).
+ Definition lfp := inf_lat (fun x => b x <= x).
 
  Proposition leq_gfp: forall y, y <= b y -> y <= gfp.
  Proof. apply leq_xsup_lat. Qed.
+ Proposition geq_lfp: forall y, b y <= y -> lfp <= y.
+ Proof. apply leq_xinf. Qed.
 
  Lemma gfp_pfp: gfp <= b gfp.
 Proof.
   unfold gfp. apply sup_spec_lat. intros y H. rewrite H. apply Hbody.
   apply leq_xsup_lat. apply H.
+Qed.
+Lemma lfp_pfp: b lfp <= lfp.
+Proof.
+  unfold lfp. apply inf_spec_lat. intros y H. rewrite <- H. apply Hbody.
+  apply leq_xinf. apply H.
 Qed.
 
  Lemma gfp_fp: gfp == b gfp.
@@ -483,7 +481,12 @@ Proof.
     + apply gfp_pfp.
     + apply leq_xsup_lat. apply Hbody. apply gfp_pfp.
 Qed.
-
+Lemma lfp_fp: lfp == b lfp.
+Proof.
+  rewrite weq_spec. split.
+    + apply leq_xinf. apply Hbody. apply lfp_pfp.
+    + apply lfp_pfp.
+Qed.
 End lattice_results.
 
 
@@ -493,9 +496,9 @@ End lattice_results.
 Section fixpoint.
  Context {X} {P: CPO X}.
 
- Definition Fix F (x:X) := F x == x.
- Definition Post F (x:X) := x <= F x.
- Definition Pre F (x:X) := F x <= x.
+ Definition Fix {Y} {Q : CPO Y} F x := F x == x.
+ Definition Post {Y} {Q : CPO Y} F x := x <= F x.
+ Definition Pre {Y} {Q : CPO Y} F x := F x <= x.
  
  Lemma fix_is_post F : forall x, Fix F x -> Post F x.
  Proof. intros. apply weq_spec in H. apply H. Qed.
@@ -505,8 +508,15 @@ Section fixpoint.
  (* Obsolete : we can't really define mu, it doesn't even always exists.
  However, we can define a property stating that we are the least element of a set*)
 
-Definition is_least S x := S x /\ forall y, S y -> x <= y.
-Definition is_inf S x := forall z, (forall y, S y -> z <= y) <-> z <= x.
+Definition is_least {Y} {Q : CPO Y} S x := S x /\ forall y, S y -> x <= y.
+Definition is_inf {Y} {Q : CPO Y} S x := forall z, (forall y, S y -> z <= y) <-> z <= x.
+Definition is_greatest {Y} {Q : CPO Y} S x := S x /\ forall y, S y -> y <= x.
+Definition is_sup {Y} {Q : CPO Y} S x := forall z, (forall y, S y -> y <= z) <-> x <= z.
+
+Lemma test_coherence1 : forall D, is_sup (Dbody D) (sup D).
+Proof. intros D z. split; apply sup_spec. Qed.
+Lemma test_coherence2 : forall D, (Dbody D) (sup D) -> is_greatest (Dbody D) (sup D).
+Proof. intros. split. assumption. now apply sup_spec. Qed.
  
  (*
  Notation µ F := (inf (fun x => Fix F x)). (*Rmq : Attention, on préférerait que ce soit un min.
@@ -710,12 +720,12 @@ Program Definition const x: mon := {| body y := x |}.
      - [id ° f = f ° id = f], and
      - [f ° (g ° h) = (f ° g) ° h]
   *)
- Definition id: mon := {| 
+ Definition id {Y} {Q : CPO Y}: mon := {| 
    body x := x; 
    Hbody x y H := H 
  |}.
 
- Definition comp (f g: mon): mon := {|
+ Definition comp {Y} {Q : CPO Y} (f g: mon): mon := {|
    body := fun x => f (g x); 
    Hbody x y H := Hbody f _ _ (Hbody g _ _ H) 
  |}.
@@ -723,9 +733,9 @@ Program Definition const x: mon := {| body y := x |}.
  
 
 
-Program Instance CPO_mon: CPO mon := {|
-   weq := pointwise_relation X weq;
-   leq := pointwise_relation X leq;
+Program Instance CPO_mon {Y} {Q : CPO Y}: CPO mon := {|
+   weq := pointwise_relation Y weq;
+   leq := pointwise_relation Y leq;
    sup F := {| body a := sup (fun b => exists2 f, F f & b=f a) |};
  |}.
 Next Obligation.
@@ -756,12 +766,13 @@ Qed.
 Next Obligation.
   destruct D as [SF D]; cbn in *. split. 
   + intros H f Df x. rewrite <- (H x).
-  apply (sup_spec (exist (fun Dbody0 : set X => Directed leq Dbody0)
-     (fun b : X => exists2 f0 : mon, SF f0 & b = f0 x)
+  apply (sup_spec (exist (fun Dbody0 : set Y => Directed leq Dbody0)
+     (fun b : Y => exists2 f0 : mon, SF f0 & b = f0 x)
      (CPO_mon_obligation_1
         (exist
            (fun Dbody0 : set mon =>
-            Directed (fun x0 x1 : mon => pointwise_relation X leq x0 x1)
+            Directed
+              (fun x0 x1 : mon => pointwise_relation Y leq x0 x1)
               Dbody0) SF D) x))).
   reflexivity.
   cbn. now exists f.
@@ -794,9 +805,7 @@ Next Obligation.
   destruct Ha. apply (H x). apply H0. apply H0.
 Qed.
 
-Definition x := mon. Print mon.
-Definition Increasing (F: @mon X P) := forall (x:X), x <= F x.
-Check Increasing.
+Definition Increasing {Y} {Q : CPO Y} (F: @mon Y Q) := forall (x:Y), x <= F x.
 
 (*Note : from now on, have to detail the type used for mon, since last instance declared is used to infer type,
 here it is now mon on the CPO of mon.*)
@@ -830,7 +839,7 @@ Definition test3 (b : @f nat _) : @f nat _  := b.
 
 (*Program Definition I := exist _ Increasing _.*)
 
-Program Definition I := exist (Directed (@leq mon CPO_mon)) (Increasing (*:set (@mon X P)*)) _. 
+Program Definition I {Y} {Q : CPO Y} := exist (Directed (@leq mon CPO_mon)) (Increasing (*:set (@mon X P)*)) _. 
 Next Obligation.
   (*unfold I_obligation_1.*)
   unfold Directed. intros f g Hf Hg. exists (comp f g). repeat split.
@@ -839,42 +848,49 @@ Next Obligation.
   + intro x. cbn. apply Hf.
 Defined.
 
-Notation H_sup := (sup I).
+Definition H_sup {Y} {Q : CPO Y} := (sup I).
 
-Lemma H_sup_is_increasing : Increasing H_sup.
-Proof.
-  intro. assert (id <= H_sup). now apply (sup_spec I). apply H. Qed.
+Lemma H_sup_is_increasing {Y} {Q : CPO Y} : Increasing H_sup.
+Proof. intro. assert (id <= H_sup). now apply (sup_spec I). apply H. Qed.
 
-(*below : a simpler version of lemma 8.21 used in theorem. Only need existence of a FixPoint,
-not of a common Fixpoint for all Increasing function.*)
-Lemma increasing_has_fix_point (F:@mon X P) : Increasing F -> exists x, Fix F x.
+(*Variante constructive :*)
+Lemma H_sup_bot_is_fix_point_of_all_Increasing {Y} {Q : CPO Y} (F:@mon Y Q) : 
+  Increasing F -> Fix F (H_sup bot).
 Proof.
-  intro. exists (H_sup bot).
-  assert ((comp F H_sup) == H_sup).
+  intro. assert ((comp F H_sup) == H_sup).
   + apply weq_spec. split. apply (sup_spec I). reflexivity. 
     intro x. transitivity (H_sup x). apply H_sup_is_increasing. apply H.
     intro. apply H.
   + unfold Fix. now setoid_rewrite (H0 bot).
 Qed.
 
+(*below : a simpler version of lemma 8.21 used in theorem. Only need existence of a FixPoint,
+not of a common Fixpoint for all Increasing function.*)
+Lemma increasing_has_fix_point {Y} {Q : CPO Y} (F:@mon Y Q) : Increasing F -> exists (x:Y), Fix F x.
+Proof.
+  intro. exists (H_sup bot). now apply H_sup_bot_is_fix_point_of_all_Increasing.
+Qed.
+
 Definition Invariant F (Y: set X) := included (Image F Y) Y.
 
 Definition is_subCPO (Q:set X) := forall D, included (Dbody D) Q -> Q (sup D).
 
-Definition P0 (F:@mon X P) := (fun x => forall Y, Invariant F Y -> is_subCPO Y -> Y x). 
+Variable F : (@mon X P).
+
+Definition P0 := (fun x => forall Y, Invariant F Y -> is_subCPO Y -> Y x). 
 (* intersection of all invariant sub-CPOs *)
 
-Lemma P0_is_invariant_subCPO (F:@mon X P): Invariant F (P0 F) /\ is_subCPO (P0 F).
+Lemma P0_is_invariant_subCPO : Invariant F P0 /\ is_subCPO P0.
 Proof.
   split.
   + intros x H. inversion H. intros Y Hi Hs. apply Hi. apply from_image. now apply (H0 Y).
   + intros D H Y Hi Hs. apply Hs. rewrite H. intros x Hx. now apply Hx.
 Qed.
 
-Lemma P0_is_smallest_invariant_subCPO (F:@mon X P) : forall Y, Invariant F Y -> is_subCPO Y -> included (P0 F) Y.
+Lemma P0_is_smallest_invariant_subCPO : forall Y, Invariant F Y -> is_subCPO Y -> included P0 Y.
 Proof. intros Y Hi Hs x Hx. now apply Hx. Qed.
 
-Program Definition Φ (F:@mon X P) : @mon (set X) (CPO_parts) :=  (*since def of mon is linked to that of CPOs, need a CPO of parts*)
+Program Definition Φ : @mon (set X) (CPO_parts) :=  (*since def of mon is linked to that of CPOs, need a CPO of parts*)
   {| body X := (fun x => (x = bot \/ (Image F X) x \/ (exists D, included (Dbody D) X /\ x = sup D))) |}.
 Next Obligation.
   intros Y1 Y2 H12 x Hx. destruct Hx; intuition. 
@@ -883,11 +899,11 @@ Next Obligation.
     intros y Hy. apply H12. now apply Hi. assumption.
 Qed.
 
-Definition P0' F := gfp (Φ F). (* sup_lat (fun x => x <= Φ F x).*)
+Definition P0' := lfp Φ. (* sup_lat (fun x => x <= Φ F x).*)
 Check P0.
 Check P0'.
 
-Instance image_eq (F:@mon X P): Proper (weq ==> weq) (Image F).
+Instance image_eq : Proper (weq ==> weq) (Image F).
 Proof. intros Y1 Y2 HY. split; intro H; inversion H; apply from_image; now apply HY. Qed.
 (*Instance set_incl : Proper (weq ==> iff_part) included.
 Proof. intros Y1 Y2 HY Y3. split; intros Hi x Hx; apply Hi; now apply HY. Qed.*)
@@ -911,9 +927,69 @@ Instance set_eq : Proper (weq ==> (pointwise_relation X iff)) appliance.
 Proof.
   intros Y1 Y2 HY. split;
 *)
+(*
+Instance weq_sym : Symmetric weq.
+Admitted.
 
+Ltac rew H H' := eapply set_eq in H'; [| (exact H || (symmetry; exact H))].
+Tactic Notation "prew" hyp(H) "in" hyp(H') := rew H H'.
+*)
+
+
+
+
+
+
+
+Ltac rew H H' :=
+  let eq := fresh in
+  pose proof @set_eq _ _ H as eq;
+  apply eq in H';
+  clear eq.
+
+Ltac rew_goal H :=
+  let eq := fresh in
+  pose proof @set_eq _ _ H as eq;
+  apply eq;
+  clear eq.
+
+Tactic Notation "prew" hyp(H) "in" hyp(H') := rew H H'.
+Tactic Notation "prew" constr(H) "in" hyp(H') := rew H H'.
+Tactic Notation "prew" hyp(H)    := rew_goal H.
+Tactic Notation "prew" constr(H) := rew_goal H.
+
+(* Tests *)
+(*
+Variable (f g : X -> Prop).
+Axiom (EQ: f == g).
+
+Goal forall (x : X) (H : f x), False.
+  intros.
+  prew EQ in H.
+Abort.
+
+Goal forall (f g : X -> Prop) (x : X) (EQ' : f == g) (H : f x), False.
+  intros.
+  prew EQ' in H.
+Abort.
+
+Goal forall (x : X), f x.
+  intros.
+  prew EQ.
+Abort.
+
+Goal forall (f g : X -> Prop) (x : X) (EQ' : f == g), f x.
+  intros.
+  prew EQ'.
+Abort.
+*)
+
+(* Previous attempts :*)
+(*
 Ltac pointed_rewrite H H' := match type of H with | _ ?x => apply (set_eq H) in H' end.
   Tactic Notation "prew" hyp(H) "in" hyp(H') := pointed_rewrite H H'.
+*)
+
 
 (*Tactic Notation prew Y1 'in' Y2 := pointed_rewrite Y1 Y2.*)
 
@@ -925,74 +1001,126 @@ Lemma equal_sets_give_same_props : forall Y1 Y2, Y1 == Y2 -> forall x, Y1 x <-> 
 Proof. intros. split.
 *)
 
-Lemma P0_is_P0' F : (P0 F) == (P0' F).
+
+Lemma P0_is_P0' : P0 == P0'.
 Proof.
   apply weq_spec. split.
-  + apply P0_is_smallest_invariant_subCPO. 
-  unfold Invariant. unfold P0'. rewrite gfp_fp at 2.
-  intros x H. right. now left.
-  unfold is_subCPO. unfold P0'. setoid_rewrite gfp_pfp. intros D H. unfold P0'.
-  apply (set_eq (gfp_fp (Φ F))).
-  
-  
-  
-  
-  
-  apply set_eq with (Φ F (gfp (Φ F))). apply gfp_fp. setoid_rewrite gfp_pfp. unfold is_subCPO.
-  
-  apply (weq_spec gfp_fp). assert gfp_fp.
-   apply weq_spec. setoid_rewrite gfp_fp.
-    - intros x Hx. assert ((Φ F) (P0' F) x). right. now left. 
-    Search gfp. assert (Φ F (P0' F) x -> P0' F x). Check gfp_fp. apply gfp_fp.
-    
-     rewrite H. apply H. rewrite gfp_fp.
-    
-     Search gfp. unfold P0'. transitivity gfp_fp. inversion Hx. destruct H as [Y [HY1 HY2]].
-      destruct (HY1 x0). assumption. apply leq_gfp. ; try intuition. rewrite H0.
-  + Print leq_gfp. apply leq_gfp.
-    intros x H. right. left. destruct (H (P0 F)). unfold P0.
-   apply leq_xsup_lat. intros x H.
-  apply H. intros y Hy. cbn. Search "Image". apply im_eq. Print Image'. destruct Hy. rewrite H0. cbn.
-  
-  apply (sup_spec_lat (fun x => x <= Φ F x)). intros x H.
+  + apply P0_is_smallest_invariant_subCPO.
+    - unfold Invariant. unfold P0'. rewrite lfp_fp at 2.
+      intros x H. right. now left.
+    - unfold is_subCPO. unfold P0'. intros D H.
+      prew (lfp_fp Φ). (*apply (set_eq (lfp_fp (Φ F))).*)
+      right. right. now exists D.
+  + unfold P0'. Print leq_gfp. apply geq_lfp. intros x H.
+    destruct P0_is_invariant_subCPO. destruct H. rewrite H.
+    apply (H1 empty). intros y Hy. contradict Hy.
+    destruct H. inversion H. apply H0. now apply from_image.
+    destruct H as [D [Hd Hs]]. rewrite Hs. now apply (H1 D).
+Qed.
 
-Lemma P0_is_in_Post (F:@mon X P) : included (P0 F) (Post F).
+Lemma P0_is_in_Post : included P0 (Post F).
 Proof.
-  assert (Invariant F (Post F)).
-  + Check Induction_Rule.
+  assert (Invariant F (Post F) /\ is_subCPO (Post F)).
+  + split.
+    - intros x H. inversion H. apply Hbody. apply H0.
+    - intros D H. apply sup_spec. intros. transitivity (F y). now apply H.
+      apply Hbody. now apply leq_xsup.
+  + now apply P0_is_smallest_invariant_subCPO.
+Qed.
+(* Note : contrarily to the book, here P0' was never used for now, neither was phi. *)
 
-Theorem Fixpoint_II (F:@mon X P) : exists x, Fix F x.
+Definition down (x:X) := (fun z => z <= x).
+
+Lemma down_is_subCPO : forall x, is_subCPO (down x).
 Proof.
-  
+  intros x D Hd. unfold down. apply sup_spec. intros. now apply Hd.
+Qed.
+
+Lemma P0_is_in_down x : Fix F x -> included P0 (down x).
+Proof.
+  intro. assert (Invariant F (down x) /\ is_subCPO (down x)).
+  + split.
+    - intros y Hy. inversion Hy. unfold down. rewrite <- H. apply Hbody. apply H0.
+    - apply down_is_subCPO.
+  + now apply P0_is_smallest_invariant_subCPO.
+Qed.
+
+(* ------ sub-CPO ----- *)
+(* Define a set (part of X) as being a CPO *)
+
+Definition set_type (Y : set X) : Type := { x : X | Y x}.
+Definition element Y (y :set_type Y) := proj1_sig y.
+
+Definition complete_body {Y : set X} (D : set (set_type Y)) : set X := 
+  (fun x => {is_in_Y : Y x & D (exist _ x is_in_Y)}).
+
+Program Definition subCPO (*{X} {P : CPO X}*) Y (H : is_subCPO Y) : (CPO (set_type Y)) := {|
+   weq x y := (@weq X P) (element x) (element y);
+   leq x y := (@leq X P) (element x) (element y);
+   sup D := (@sup X P) (exist (Directed leq) (complete_body (Dbody D)) _) ;
+ |}.
+Next Obligation. 
+  destruct D as [D Hd]. cbn. intros x y Hx Hy. inversion Hx. inversion Hy.
+  destruct (Hd (exist (fun x : X => Y x) x x0) (exist (fun x : X => Y x) y x1)) 
+    as [[z Pz] [Hz [Hxz Hyz]]]; try assumption.
+  exists z. split. now exists Pz. now split.
+Qed.
+Next Obligation.
+  apply H. intros x Hx.
+  destruct D as [D Hd]; cbn in Hx. now destruct Hx.
+Qed.
+Next Obligation.
+  apply Build_PreOrder; intro x. reflexivity. intros y z Hxy Hyz. now transitivity (element y).
+Qed.
+Next Obligation. apply weq_spec. Qed.
+Next Obligation. split.
+  + intros. apply (sup_spec (exist (Directed leq) (complete_body (Dbody D)) (subCPO_obligation_1 D))); cbn.
+    assumption. destruct y. cbn. now exists y.
+  + intros. apply sup_spec. cbn. intros. destruct H1. now apply (H0 (exist (fun x : X => Y x) y x)).
+Qed.
+
+Program Instance P0_CPO : CPO (set_type P0) := (subCPO _).
+Next Obligation. apply P0_is_invariant_subCPO. Qed.
+
+Program Definition G : @mon (set_type P0) P0_CPO := {| body := fun y => (exist _ (F (element y)) _) |}.
+Next Obligation. destruct y as [x Hx]; cbn. apply P0_is_invariant_subCPO. now apply from_image. Qed.
+Next Obligation. intros y1 y2 H12; cbn. now apply Hbody. Qed.
+
+Lemma G_is_increasing : Increasing G.
+Proof. intro y. destruct y as [x Hx]; cbn. now apply P0_is_in_Post. Qed.
+
+Theorem Fixpoint_II : exists x, Fix F x.
+Proof.
+  destruct (increasing_has_fix_point G_is_increasing).
+  destruct x as [x Hx]. cbn in H. now exists x.
+Qed.
+
+(* Actually, we can go further. Since we constructively built the fixpoint of G as being (H_sup bot) for a well-chosen CPO.
+So we can define this fix-point and add the results from Claim 3 of the theorem : it is both the top of P0 and the least fixpoint of F.*)
+
+Definition a := (H_sup bot). (*Here a is of type (set_type P0) since this was the last CPO to be defined. 
+It's what we want, no need to specify implicit arguments. *) Check a.
+Print is_least.
+
+Lemma a_is_fixpoint_of_F : Fix F (element a).
+Proof.
+  assert (Fix G a). apply H_sup_bot_is_fix_point_of_all_Increasing. apply G_is_increasing.
+  destruct a as [a Ha]. now cbn in *.
+Qed.
+
+Lemma a_is_top_of_P0_and_least_fixpoint_of_F : is_greatest P0 (element a) /\ is_least (Fix F) (element a).
+Proof. split.
+  + split. destruct a as [µ Hmu]. now cbn. apply P0_is_in_down.
+   intros. apply a_is_fixpoint_of_F.
+  + split. apply a_is_fixpoint_of_F. intros. apply (P0_is_in_down y).
+    assumption. destruct a as [µ Hmu]. now cbn.
+Qed.
 
 End fixpoint.
 
 
 
 
-Section lattice_results.
-Context {X} `{L: CompleteLattice X}.
- Variable b: mon.
-
- Definition gfp := sup_lat (fun x => x <= b x).
-
- Proposition leq_gfp: forall y, y <= b y -> y <= gfp.
- Proof. apply leq_xsup_lat. Qed.
-
- Lemma gfp_pfp: gfp <= b gfp.
-Proof.
-  unfold gfp. apply sup_spec_lat. intros y H. rewrite H. apply Hbody.
-  apply leq_xsup_lat. apply H.
-Qed.
-
- Lemma gfp_fp: gfp == b gfp.
-Proof.
-  rewrite weq_spec. split.
-    + apply gfp_pfp.
-    + apply leq_xsup_lat. apply Hbody. apply gfp_pfp.
-Qed.
-
-End lattice_results.
 
 
 
