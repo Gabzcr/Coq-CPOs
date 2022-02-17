@@ -195,7 +195,7 @@ Proof.
   now apply (sup_spec D s2). now apply (sup_spec D s1).
 Qed.*)
 
-Program Definition empty : (directed_set leq) := exist _ (fun _ => False) _.
+Program Definition empty {Y} {Q : CPO Y}: (directed_set leq) := exist _ (fun _ => False) _.
 Next Obligation.
 unfold Directed. (* unfold Directed_generalized.*) intros. contradict H.
 Defined.
@@ -766,16 +766,7 @@ Qed.
 Next Obligation.
   destruct D as [SF D]; cbn in *. split. 
   + intros H f Df x. rewrite <- (H x).
-  apply (sup_spec (exist (fun Dbody0 : set Y => Directed leq Dbody0)
-     (fun b : Y => exists2 f0 : mon, SF f0 & b = f0 x)
-     (CPO_mon_obligation_1
-        (exist
-           (fun Dbody0 : set mon =>
-            Directed
-              (fun x0 x1 : mon => pointwise_relation Y leq x0 x1)
-              Dbody0) SF D) x))).
-  reflexivity.
-  cbn. now exists f.
+  eapply sup_spec. reflexivity. cbn. now exists f.
   + intros H x. apply sup_spec. intros. inversion H0. rewrite H2. now apply (H x0).
 Qed.
 
@@ -805,7 +796,8 @@ Next Obligation.
   destruct Ha. apply (H x). apply H0. apply H0.
 Qed.
 
-Definition Increasing {Y} {Q : CPO Y} (F: @mon Y Q) := forall (x:Y), x <= F x.
+Definition Increasing {Y} {Q : CPO Y} (*(F: @mon Y Q)*) (G : Y -> Y) := forall (x:Y), x <= G x.
+Check Increasing.
 
 (*Note : from now on, have to detail the type used for mon, since last instance declared is used to infer type,
 here it is now mon on the CPO of mon.*)
@@ -871,27 +863,28 @@ Proof.
   intro. exists (H_sup bot). now apply H_sup_bot_is_fix_point_of_all_Increasing.
 Qed.
 
-Definition Invariant F (Y: set X) := included (Image F Y) Y.
+Definition Invariant {Y} {Q : CPO Y} F (Y0: set Y) := included (Image F Y0) Y0.
 
-Definition is_subCPO (Q:set X) := forall D, included (Dbody D) Q -> Q (sup D).
+Definition is_subCPO {Y} {Q' : CPO Y} (Q:set Y) := forall D, included (Dbody D) Q -> Q (sup D).
 
 Variable F : (@mon X P).
 
-Definition P0 := (fun x => forall Y, Invariant F Y -> is_subCPO Y -> Y x). 
+Definition P0 {Y} {Q : CPO Y} (F:Y->Y) := 
+  (fun x => forall Y, Invariant F Y -> is_subCPO Y -> Y x). 
 (* intersection of all invariant sub-CPOs *)
 
-Lemma P0_is_invariant_subCPO : Invariant F P0 /\ is_subCPO P0.
+Lemma P0_is_invariant_subCPO {Yt} {Q : CPO Yt} (F':Yt->Yt) : Invariant F' (P0 F') /\ is_subCPO (P0 F').
 Proof.
   split.
   + intros x H. inversion H. intros Y Hi Hs. apply Hi. apply from_image. now apply (H0 Y).
   + intros D H Y Hi Hs. apply Hs. rewrite H. intros x Hx. now apply Hx.
 Qed.
 
-Lemma P0_is_smallest_invariant_subCPO : forall Y, Invariant F Y -> is_subCPO Y -> included P0 Y.
+Lemma P0_is_smallest_invariant_subCPO {Yt} {Q : CPO Yt} (F':Yt->Yt) : forall Y, Invariant F' Y -> is_subCPO Y -> included (P0 F') Y.
 Proof. intros Y Hi Hs x Hx. now apply Hx. Qed.
 
-Program Definition Φ : @mon (set X) (CPO_parts) :=  (*since def of mon is linked to that of CPOs, need a CPO of parts*)
-  {| body X := (fun x => (x = bot \/ (Image F X) x \/ (exists D, included (Dbody D) X /\ x = sup D))) |}.
+Program Definition Φ F' : @mon (set X) (CPO_parts) :=  (*since def of mon is linked to that of CPOs, need a CPO of parts*)
+  {| body X := (fun x => (x = bot \/ (Image F' X) x \/ (exists D, included (Dbody D) X /\ x = sup D))) |}.
 Next Obligation.
   intros Y1 Y2 H12 x Hx. destruct Hx; intuition. 
   + right. left. inversion H0. apply from_image. now apply H12.
@@ -899,7 +892,7 @@ Next Obligation.
     intros y Hy. apply H12. now apply Hi. assumption.
 Qed.
 
-Definition P0' := lfp Φ. (* sup_lat (fun x => x <= Φ F x).*)
+Definition P0' F' := lfp (Φ F'). (* sup_lat (fun x => x <= Φ F x).*)
 Check P0.
 Check P0'.
 
@@ -1002,23 +995,23 @@ Proof. intros. split.
 *)
 
 
-Lemma P0_is_P0' : P0 == P0'.
+Lemma P0_is_P0' F' : (P0 F') == (P0' F').
 Proof.
   apply weq_spec. split.
   + apply P0_is_smallest_invariant_subCPO.
     - unfold Invariant. unfold P0'. rewrite lfp_fp at 2.
       intros x H. right. now left.
     - unfold is_subCPO. unfold P0'. intros D H.
-      prew (lfp_fp Φ). (*apply (set_eq (lfp_fp (Φ F))).*)
+      prew (lfp_fp (Φ F')). (*apply (set_eq (lfp_fp (Φ F))).*)
       right. right. now exists D.
   + unfold P0'. Print leq_gfp. apply geq_lfp. intros x H.
-    destruct P0_is_invariant_subCPO. destruct H. rewrite H.
+    destruct (@P0_is_invariant_subCPO X P F'). destruct H. rewrite H.
     apply (H1 empty). intros y Hy. contradict Hy.
     destruct H. inversion H. apply H0. now apply from_image.
     destruct H as [D [Hd Hs]]. rewrite Hs. now apply (H1 D).
 Qed.
 
-Lemma P0_is_in_Post : included P0 (Post F).
+Lemma P0_is_in_Post : included (P0 F) (Post F).
 Proof.
   assert (Invariant F (Post F) /\ is_subCPO (Post F)).
   + split.
@@ -1036,7 +1029,7 @@ Proof.
   intros x D Hd. unfold down. apply sup_spec. intros. now apply Hd.
 Qed.
 
-Lemma P0_is_in_down x : Fix F x -> included P0 (down x).
+Lemma P0_is_in_down x : Fix F x -> included (P0 F) (down x).
 Proof.
   intro. assert (Invariant F (down x) /\ is_subCPO (down x)).
   + split.
@@ -1054,7 +1047,9 @@ Definition element Y (y :set_type Y) := proj1_sig y.
 Definition complete_body {Y : set X} (D : set (set_type Y)) : set X := 
   (fun x => {is_in_Y : Y x & D (exist _ x is_in_Y)}).
 
-Program Definition subCPO (*{X} {P : CPO X}*) Y (H : is_subCPO Y) : (CPO (set_type Y)) := {|
+Check is_subCPO. Print is_subCPO.
+
+Program Definition subCPO (*{X} {P : CPO X}*) (Y:set X) (H : is_subCPO Y) : (CPO (set_type Y)) := {|
    weq x y := (@weq X P) (element x) (element y);
    leq x y := (@leq X P) (element x) (element y);
    sup D := (@sup X P) (exist (Directed leq) (complete_body (Dbody D)) _) ;
@@ -1079,10 +1074,11 @@ Next Obligation. split.
   + intros. apply sup_spec. cbn. intros. destruct H1. now apply (H0 (exist (fun x : X => Y x) y x)).
 Qed.
 
-Program Instance P0_CPO : CPO (set_type P0) := (subCPO _).
+Program Instance P0_CPO : CPO (set_type (P0 F)) := (subCPO _).
 Next Obligation. apply P0_is_invariant_subCPO. Qed.
 
-Program Definition G : @mon (set_type P0) P0_CPO := {| body := fun y => (exist _ (F (element y)) _) |}.
+Program Definition G : @mon (set_type (P0 F)) P0_CPO := 
+  {| body := fun y => (exist _ (F (element y)) _) |}.
 Next Obligation. destruct y as [x Hx]; cbn. apply P0_is_invariant_subCPO. now apply from_image. Qed.
 Next Obligation. intros y1 y2 H12; cbn. now apply Hbody. Qed.
 
@@ -1091,7 +1087,7 @@ Proof. intro y. destruct y as [x Hx]; cbn. now apply P0_is_in_Post. Qed.
 
 Theorem Fixpoint_II : exists x, Fix F x.
 Proof.
-  destruct (increasing_has_fix_point G_is_increasing).
+  destruct (increasing_has_fix_point G G_is_increasing).
   destruct x as [x Hx]. cbn in H. now exists x.
 Qed.
 
@@ -1108,7 +1104,7 @@ Proof.
   destruct a as [a Ha]. now cbn in *.
 Qed.
 
-Lemma a_is_top_of_P0_and_least_fixpoint_of_F : is_greatest P0 (element a) /\ is_least (Fix F) (element a).
+Theorem a_is_top_of_P0_and_least_fixpoint_of_F : is_greatest (P0 F) (element a) /\ is_least (Fix F) (element a).
 Proof. split.
   + split. destruct a as [µ Hmu]. now cbn. apply P0_is_in_down.
    intros. apply a_is_fixpoint_of_F.
@@ -1116,7 +1112,208 @@ Proof. split.
     assumption. destruct a as [µ Hmu]. now cbn.
 Qed.
 
+
+
+(* ------ Theorem III ------ *)
+
+
+(* Now show that P0 is a chain, to prove that it has a sup (top). *)
+
+Definition Comparables (x:X) := (fun y => y <= x \/ x <= y).
+
+Definition lt {Y} {Q : CPO Y} x y := x <= y /\ ~ (x == y).
+Infix "<" := lt.
+Axiom classic : forall (P : Prop), P \/ ~ P.
+
+Definition A F' : set X := 
+  (fun x => (P0 F') x /\ forall y, (P0 F') y -> y < x -> F' y <= x).
+
+Definition Ax F' x : set X :=
+  (fun y => (P0 F') y /\ (y <= x \/ F' x <= y)).
+
+Definition fun_ext (f:X->X) := Proper (weq ==> weq) f.
+
+
+Axiom fun_ext_true : forall (f: X -> X), Proper (weq ==> weq) f. 
+(*temporary, I will give this as an hypothesis of lemmas that need it.*)
+
+Lemma Ax_are_invariant_subCPOs F' : Increasing F' -> forall x, A F' x 
+  -> Invariant F' (Ax F' x) /\ is_subCPO (Ax F' x).
+Proof.
+  intros HF x Ha. destruct Ha as [Px Hx]. split.
+  + intros y Hy. inversion Hy. split. apply P0_is_invariant_subCPO. apply from_image. apply H.
+    inversion H. destruct H2.
+    - destruct (classic (x <= x0)). (* WARNING : excluded middle here *)
+      right. apply weq_spec. apply fun_ext_true. (* WARNING :  functional extensionality here *)
+      now apply weq_spec.
+      left. apply (Hx x0). assumption. destruct (classic (x0 == x)). (* Warning : excluded middle here *)
+      contradict H3. apply weq_spec. apply H4. now split.
+     (*apply (Hx x0). destruct (Hx x0); intuition. right. now apply weq_spec.*)
+    - right. now transitivity x0.
+  + intros D Hi. assert (P0 F' (sup D)). apply P0_is_invariant_subCPO. transitivity (Ax F' x).
+    assumption. intros x0 Hx0. apply Hx0. split. apply H.
+    destruct (classic (exists y, (Dbody D) y /\ F' x <= y)). (* WARNING : excluded Middle here !!! *)
+    right. destruct H0 as [y Hy]. transitivity y. apply Hy. apply leq_xsup. apply Hy.
+    left. apply sup_spec. intros. destruct (Hi y). assumption.
+    destruct H3. assumption. contradict H0. now exists y.
+Qed.
+
+Lemma P0_is_Ax F' : Increasing F' -> forall x, (A F' x) -> (P0 F') == (Ax F' x).
+Proof.
+  intros HF x Hx. apply weq_spec. split.
+  + apply P0_is_smallest_invariant_subCPO. now apply Ax_are_invariant_subCPOs.
+    now apply Ax_are_invariant_subCPOs.
+  + intros y Hy. apply Hy.
+Qed.
+
+Lemma A_is_P0 F' : (Increasing F') -> (A F') == (P0 F').
+Proof. (*Lots and lots of excluded middle to manipulate "x < y" and 
+once to get : forall x, P x \/ Q x -> (exists x, Q x) \/ (forall x, P x). *)
+  intro HF. apply weq_spec. split.
+  + intros x Hx. apply Hx.
+  + apply P0_is_smallest_invariant_subCPO.
+    - intros x Hx. inversion Hx. split. apply P0_is_invariant_subCPO.
+      apply from_image. apply H.
+      intros. assert (Ax F' x0 y). apply P0_is_Ax; intuition. unfold Ax in H3.
+      destruct H3. destruct H4. destruct (classic (y < x0)).
+      transitivity x0. now apply H. apply HF. destruct (classic (y == x0)).
+      apply weq_spec. now apply fun_ext_true. contradict H4. intro. apply H5. now split.
+      destruct H2. contradict H5. now apply weq_spec.
+    - intros D HD. split. apply P0_is_invariant_subCPO. transitivity (A F').
+      assumption. intros x Hx. apply Hx.
+      intros y Hy Hs. 
+      destruct (classic (exists k, (Dbody D) k /\ y <= k)).
+      destruct H as [k [Dk Hyk]]. destruct (classic (y == k)).
+      assert (k < sup D). split. now apply leq_xsup. destruct Hs. now rewrite H in H1.
+      transitivity (F' k). apply weq_spec. now apply fun_ext_true.
+      assert (Ax F' k (sup D)). apply P0_is_Ax; intuition.
+      apply P0_is_invariant_subCPO. rewrite HD. intros x Hx. apply Hx.
+      destruct H1. destruct H2. destruct H0. contradict H3. now apply weq_spec.
+      assumption. transitivity k. destruct (HD k Dk). now apply (H1 y). 
+      now apply leq_xsup.
+      assert (sup D <= y). apply sup_spec. intros. destruct (classic (y == y0)).
+      now apply weq_spec. destruct (classic (y0 <= y)). assumption. contradict H.
+      exists y0. split. assumption. assert (Ax F' y0 y). apply P0_is_Ax; intuition.
+      destruct H. destruct H3; intuition. contradict H2. rewrite <- H3. apply HF.
+      destruct Hs. contradict H2. now apply weq_spec.
+Qed.
+
+(*
+Program Definition G' (F': X -> X) : set_type (P0 F') -> set_type (P0 F') := 
+  fun x => (exist _ (F' (element x)) _).
+Next Obligation.
+destruct x as [x Hx]; cbn. apply P0_is_invariant_subCPO. now apply from_image. Qed.
+*)
+
+Definition is_Chain (Y : set X) := forall (x y : X), Y x -> Y y -> x <= y \/ y <= x.
+
+Lemma P0_is_Chain (F':X -> X) : Increasing F' -> is_Chain (P0 F').
+Proof.
+  intros HF x y Hx Hy. assert (Ax F' x y).
+  apply P0_is_Ax; intuition. now prew (A_is_P0 HF).
+  destruct H. destruct H0. now right. left. transitivity (F' x).
+  apply HF. assumption.
+Qed.
+
+Lemma chain_is_directed {Y} {Q : CPO Y} : forall D, is_Chain D -> Directed leq D.
+Proof.
+  intros D Hd x y Hx Hy. destruct (Hd x y); intuition.
+  exists y. now split.
+  exists x. now split.
+Qed.
+
+Lemma P0_is_directed (F':X -> X) : Increasing F' -> Directed leq (P0 F').
+Proof. intro HF. apply chain_is_directed. now apply P0_is_Chain. Qed.
+
+Program Definition top_P0 (F':X -> X) (H : Increasing F') := (sup (exist _ (P0 F') _)).
+Next Obligation. apply P0_is_directed. apply H. Qed.
+
+Definition is_minimal {Y} {Q : CPO Y} S x := S x /\ forall y, S y -> y <= x -> y == x.
+
+(*The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper)
+However, from an existing fix point, it seems we can deduce a minimal fix point since the set of 
+fixpoints between bottom and our fix point is a chain.*)
+Theorem Fixpoint_III (F' : X -> X) : Increasing F' -> exists x, Fix F' x(*is_minimal (Fix F') x*).
+Proof.
+  intro HF. exists (top_P0 HF). (* split.
+  +*) apply weq_spec. split. apply leq_xsup; cbn. apply P0_is_invariant_subCPO.
+   apply from_image. apply P0_is_invariant_subCPO; cbn. intro. now intro.
+   apply sup_spec; cbn. intros. transitivity (top_P0 HF). now apply leq_xsup.
+   apply HF.
+Qed.
+
+
+(* ------------------ Another approah, trying to avoid excluded middle ----------------------- *)
+
+(* Found an article stating that this theorem is False in intuitionist logic ! *)
+(* TODO : clean up above proof using classical logic, or make it clean below using Bourbaki's proof.
+State that x <= y -> ... and same with the set D that is all below x or has an element above x *)
+
+(* with ordinals ?*)
+Inductive C (F' : X -> X) : set X := 
+  | C_bot : C F' bot
+  | C_succ : forall x, C F' x -> C F' (F' x)
+  | C_lim : forall D, included (Dbody D) (C F') -> C F' (sup D).
+
+(* Now we want to prove that C is a chain. Note that C = P0' = P0, hence the proofs above. *)
+
+
+
+Definition Extreme F' : set X := 
+  (fun c => (P0 F') c /\ forall x, (P0 F') x -> x <= c -> x==c \/ F' x <= c).
+
+Definition Mc F' c : set X :=
+  (fun x => (P0 F') x /\ (x <= c \/ F' c <= x)).
+
+Lemma Mc_is_P0 F' : Increasing F' -> forall c, Extreme F' c -> (P0 F') == (Mc F' c).
+Proof.
+  intros HF c Ec. destruct Ec as [Pc Ec']. split.
+  + apply P0_is_smallest_invariant_subCPO.
+    - intros x Hx. inversion Hx. split. apply P0_is_invariant_subCPO. apply from_image. apply H.
+      destruct H as [Px0 Hx0]. destruct Hx0.
+      * destruct (Ec' x0); intuition. right. apply weq_spec. now apply fun_ext_true.
+      * right. transitivity x0. assumption. apply HF.
+    - intros D Hi. split. 
+      apply P0_is_invariant_subCPO. rewrite Hi. intros x0 Hx0. apply Hx0.
+      destruct (classic (exists y, (Dbody D) y /\ F' c <= y)). (* WARNING : excluded Middle here !!! *)
+      right. destruct H as [y Hy]. transitivity y. apply Hy. now apply leq_xsup.
+      left. apply sup_spec. intros. destruct (Hi y). assumption.
+      destruct H2. assumption. contradict H. now exists y. (* Need excluded middle to prove subCPO here :'( *)
+  + intro Hm. apply Hm.
+Qed.
+
+Lemma P0_is_extreme F' : Increasing F' -> forall x, P0 F' x -> Extreme F' x.
+Proof.
+  intros HF. apply P0_is_smallest_invariant_subCPO.
+  +  intros c Hc. inversion Hc. inversion H as [HPx HEx]. split.
+    - apply P0_is_invariant_subCPO. now apply from_image.
+    - intros. assert (P0 F' == Mc F' x). apply (Mc_is_P0 HF H). 
+    assert (Mc F' x x0). now rewrite <- (set_eq H3 x0).
+    destruct H4. destruct H5.
+    
+     destruct (classic (x0 == F' x)). now left. (* WARNING : another excluded middle here *)
+      right.
+      (*TODO : finish *)
+Admitted.
+
+
+
+
+
+
+
+
+
+
+
 End fixpoint.
+
+
+
+
+
+(* ------------------------  END OF CURRENT WORK ------------------------------ *)
+
 
 
 
