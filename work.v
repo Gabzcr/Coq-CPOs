@@ -13,6 +13,7 @@ Definition Directed {X} `(leq : rel X) (D : set X) : Prop :=
   forall x y, D x -> D y -> exists z, D z /\ leq x z /\ leq y z.
 Definition directed_set {X} (leq : rel X) := {Dbody : set X | Directed leq Dbody}.
 Definition Dbody {X leq} (D : directed_set leq) : set X := proj1_sig D.
+Coercion Dbody : directed_set >-> Funclass.
 
 (* Definition of a CPO : Complete Partially Ordered set, and Lattice as a particular (stronger) CPO. *)
 Class CPO (X: Type) := {
@@ -21,7 +22,7 @@ Class CPO (X: Type) := {
   sup: directed_set leq -> X;
   PreOrder_leq:> PreOrder leq;
   weq_spec: forall x y, weq x y <-> (leq x y /\ leq y x);
-  sup_spec: forall D z, (leq (sup D) z <-> forall (y:X), (Dbody D) y -> leq y z);
+  sup_spec: forall D z, (leq (sup D) z <-> forall (y:X), D y -> leq y z);
 }.
 
 Class CompleteLattice (X : Type) `(L : CPO X) := {
@@ -133,7 +134,7 @@ Section sup.
 
  Context {X} {P: CPO X} `{L : CompleteLattice X}.
 
- Lemma leq_xsup D y: (Dbody D) y -> y <= sup D.
+ Lemma leq_xsup (D : directed_set _) y: D y -> y <= sup D.
  Proof. intro H. now apply (sup_spec D). Qed.
 
  Lemma leq_xsup_lat (Y:X->Prop) y : Y y -> y <= sup_lat Y.
@@ -176,14 +177,14 @@ Section sup.
 
 (* --- Inclusion of sets and sup --- *)
 
- Definition included_body (S T : directed_set leq) := (Dbody S) ⊆ (Dbody T).
+ Definition included_body (S T : directed_set leq) := S ⊆ T.
  #[global] Instance sup_preserves_inclusion: Proper (included_body ==> leq) sup.
  Proof.
   intros S T HST. apply sup_spec. intros. apply leq_xsup.
   now apply HST.
  Qed.
 
- Definition iff_part_body (S T : directed_set leq) := iff_part (Dbody S) (Dbody T).
+ Definition iff_part_body (S T : directed_set leq) := iff_part S T.
  #[global] Instance sup_preserves_equality: Proper (iff_part_body ==> weq) sup.
  Proof.
   intros S T HST. apply weq_spec. split; apply sup_preserves_inclusion; intros x Hx; now apply HST.
@@ -385,7 +386,8 @@ Section Particular_CPOs.
 
  (** * sub-CPO : Define a set (part of X) as being a CPO *)
 
- Definition is_subCPO (Y : set X) := forall D, included (Dbody D) Y -> Y (sup D).
+ Definition is_subCPO (Y : set X) := forall (D : directed_set _),
+     included D Y -> Y (sup D).
 
  Definition down (x:X) := (fun z => z <= x).
 
@@ -401,7 +403,7 @@ Section Particular_CPOs.
  Program Definition subCPO (*{X} {P : CPO X}*) (Y:set X) (H : is_subCPO Y) : (CPO (set_type Y)) := {|
    weq x y := (@weq X P) (element x) (element y);
    leq x y := (@leq X P) (element x) (element y);
-   sup D := (@sup X P) (exist (Directed leq) (complete_body (Dbody D)) _) ;
+   sup D := (@sup X P) (exist (Directed leq) (complete_body D) _) ;
  |}.
  Next Obligation.
   destruct D as [D Hd]. cbn. intros x y Hx Hy. inversion Hx. inversion Hy.
@@ -416,7 +418,7 @@ Section Particular_CPOs.
  Next Obligation. apply Build_PreOrder; intro x. reflexivity. intros y z Hxy Hyz. now transitivity (element y). Qed.
  Next Obligation. apply weq_spec. Qed.
  Next Obligation. split.
-  + intros. apply (sup_spec (exist (Directed leq) (complete_body (Dbody D)) (subCPO_obligation_1 D))); cbn.
+  + intros. apply (sup_spec (exist (Directed leq) (complete_body D) (subCPO_obligation_1 D))); cbn.
     assumption. destruct y. cbn. now exists y.
   + intros. apply sup_spec. cbn. intros. destruct H1. now apply (H0 (exist (fun x : X => Y x) y x)).
  Qed.
@@ -579,7 +581,7 @@ It is enough to work with P0 as the smallest invariant subCPO, no need to use it
  Context {X} {P: CPO X}.
 
  Program Definition Φ F' : @mon (set X) (CPO_parts) :=  (*since def of mon is linked to that of CPOs, need a CPO of parts*)
-  {| body X := (fun x => (x = bot \/ (Image F' X) x \/ (exists D, included (Dbody D) X /\ x = sup D))) |}.
+  {| body X := (fun x => (x = bot \/ (Image F' X) x \/ (exists (D : directed_set _), included (Dbody D) X /\ x = sup D))) |}.
  Next Obligation.
   intros Y1 Y2 H12 x Hx. destruct Hx; intuition.
   + right. left. inversion H0. apply from_image. now apply H12.
@@ -620,9 +622,11 @@ Section Fixpoints.
  Definition is_greatest {Y} {Q : CPO Y} S x := S x /\ forall y, S y -> y <= x.
  Definition is_sup {Y} {Q : CPO Y} S x := forall z, (forall y, S y -> y <= z) <-> x <= z.
 
- Lemma test_coherence1 : forall D, is_sup (Dbody D) (sup D).
+ Lemma test_coherence1 : forall (D : directed_set _), is_sup D (sup D).
  Proof. intros D z. split; apply sup_spec. Qed.
- Lemma test_coherence2 : forall D, (Dbody D) (sup D) -> is_greatest (Dbody D) (sup D).
+ Lemma test_coherence2 : forall (D : directed_set _),
+     D (sup D) ->
+     is_greatest D (sup D).
  Proof. intros. split. assumption. now apply sup_spec. Qed.
 
 
@@ -772,7 +776,7 @@ Section Bourbaki_Witt.
       * right. transitivity x0. assumption. apply HF.
     - intros D Hi. split.
       apply P0_is_invariant_subCPO. rewrite Hi. intros x0 Hx0. apply Hx0.
-      destruct (EM (exists y, (Dbody D) y /\ F' c <= y)). (* WARNING : excluded middle ! *)
+      destruct (EM (exists y, D y /\ F' c <= y)). (* WARNING : excluded middle ! *)
       * right. destruct H as [y Hy]. transitivity y. apply Hy. now apply leq_xsup.
       * left. apply sup_spec. intros. destruct (Hi y). assumption.
         destruct H2. assumption. contradict H. now exists y.
@@ -790,7 +794,7 @@ Section Bourbaki_Witt.
         apply weq_spec. now apply Fp. transitivity x; intuition.
       * exfalso. eapply not_leq_and_gt. split. apply H5. apply H2.
   + intros D Ed. split. apply P0_is_invariant_subCPO. rewrite Ed. intros x Hx. apply Hx.
-    intros x Px Hxd. destruct (EM (exists c, (Dbody D) c /\ x <= c)).
+    intros x Px Hxd. destruct (EM (exists c, D c /\ x <= c)).
     - destruct H as [c [Hdc Hcx]]. apply leq_is_lt_or_eq in Hcx; intuition.
       * transitivity (F' c). apply weq_spec. now apply Fp.
         assert (Mc F' c (sup D)). apply Mc_is_P0; intuition. apply P0_is_invariant_subCPO.
