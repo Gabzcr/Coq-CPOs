@@ -33,7 +33,7 @@ Declare Scope CPO. (* I don't really understand there 2 lines. *)
 Open Scope CPO.
 Infix "==" := weq (at level 70): CPO.
 Infix "<=" := leq: CPO.
-Global Hint Extern 0 => reflexivity: core.
+#[global] Hint Extern 0 => reflexivity: core.
 
 (** * Utilities  *)
 
@@ -110,7 +110,7 @@ Section Partial_order.
     intros x y z. rewrite 3weq_spec. split; transitivity y; tauto.
  Qed.
 
- Global Instance PartialOrder_weq_leq: PartialOrder weq leq.
+ #[global] Instance PartialOrder_weq_leq: PartialOrder weq leq.
  Proof.
    intros x y. simpl. now rewrite weq_spec.
  Qed.
@@ -191,7 +191,7 @@ Section sup.
 
 End sup.
 
-Global Hint Resolve bot_spec: core.
+#[global] Hint Resolve bot_spec: core.
 
 
 
