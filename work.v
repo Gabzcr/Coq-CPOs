@@ -15,19 +15,23 @@ Definition directed_set {X} (leq : rel X) := {Dbody : set X | Directed leq Dbody
 Definition Dbody {X leq} (D : directed_set leq) : set X := proj1_sig D.
 Coercion Dbody : directed_set >-> Funclass.
 
-(* Definition of a CPO : Complete Partially Ordered set, and Lattice as a particular (stronger) CPO. *)
-Class CPO (X: Type) := {
-    weq: relation X;
+Class PO (X: Type) := {
+    weq : relation X;
     leq: relation X;
-    sup: directed_set leq -> X;
     PreOrder_leq:> PreOrder leq;
     weq_spec: forall x y, weq x y <-> (leq x y /\ leq y x);
+  }.
+
+(* Definition of a CPO : Complete Partially Ordered set*)
+Class CPO (X: Type) `(P' : PO X) := {
+    sup: directed_set leq -> X;
     sup_spec: forall D z, (leq (sup D) z <-> forall (y:X), D y -> leq y z);
   }.
 
-Class CompleteLattice (X : Type) `(L : CPO X) := {
-    sup_lat: (X -> Prop) -> X;
-    sup_spec_lat:  forall Y z, (leq (sup_lat Y) z <-> forall y, Y y -> leq y z);
+(* Definition of Lattice as a particular (stronger) CPO. *)
+Class CompleteLattice (X : Type) `(L' : PO X) := {
+    supL: (X -> Prop) -> X;
+    sup_specL:  forall Y z, (leq (supL Y) z <-> forall y, Y y -> leq y z);
   }.
 
 (* Scopes are a way to guide parsing when overloading a symbol.
@@ -42,11 +46,11 @@ Infix "<=" := leq: CPO.
 (** * Utilities  *)
 
 (** any monotone function preserves equality  *)
-Lemma op_leq_weq_1 {X Y} {LX: CPO X} {LY: CPO Y} {f: X -> Y}
+Lemma op_leq_weq_1 {X Y} {LX: PO X} {LY: PO Y} {f: X -> Y}
       {Hf: Proper (leq ==> leq) f}: Proper (weq ==> weq) f.
 Proof. intros x y. rewrite 2weq_spec. intro E; split; apply Hf; apply E. Qed.
 
-Lemma op_leq_weq_2 {X Y Z} {LX: CPO X} {LY: CPO Y} {LZ: CPO Z} {f: X -> Y -> Z}
+Lemma op_leq_weq_2 {X Y Z} {LX: PO X} {LY: PO Y} {LZ: PO Z} {f: X -> Y -> Z}
       {Hf: Proper (leq ==> leq ==> leq) f}: Proper (weq ==> weq ==> weq) f.
 Proof.
   intros x y E x' y' E'. rewrite weq_spec in E. rewrite weq_spec in E'.
@@ -58,9 +62,9 @@ Qed.
 
 Section Sets.
 
-  Context {X} {P: CPO X}.
+  Context {X} {P' : PO X}.
 
-  Definition iff_part (f g : X -> Prop) := forall z, f z <-> g z. (*equality of sets*)
+  Definition set_eq (f g : X -> Prop) := forall z, f z <-> g z. (*equality of sets*)
 
   Definition included (S T: set X) := forall x, S x -> T x.
 
@@ -77,12 +81,12 @@ Infix "⊆" := included (at level 70).
 
 Section Directedness.
 
-  Context {X} {P: CPO X}.
+  Context {X} {P' : PO X}.
 
   Lemma directed_symmetry f g : (forall z, f z <-> g z) -> Directed leq f <-> Directed leq g.
   Proof. intro H. unfold Directed. setoid_rewrite H. tauto. Qed.
 
-  #[global] Instance directed_eq : Proper (iff_part ==> iff) (Directed leq).
+  #[global] Instance directed_eq : Proper (set_eq ==> iff) (Directed leq).
   Proof. intros f g. apply directed_symmetry. Qed.
 
   Lemma singleton_is_directed x : Directed leq (fun z => z=x).
@@ -90,7 +94,7 @@ Section Directedness.
 
   Definition is_Chain (Y : set X) := forall (x y : X), Y x -> Y y -> x <= y \/ y <= x.
 
-  Lemma chain_is_directed {Y} {Q : CPO Y} : forall D, is_Chain D -> Directed leq D.
+  Lemma chain_is_directed : forall D, is_Chain D -> Directed leq D.
   Proof.
     intros D Hd x y Hx Hy. destruct (Hd x y); intuition.
     exists y. now split.
@@ -103,7 +107,7 @@ End Directedness.
 
 Section Partial_order.
 
-  Context {X} {P: CPO X}.
+  Context {X} {P' : PO X}.
 
   #[global] Instance Equivalence_weq: Equivalence weq.
   Proof.
@@ -134,23 +138,23 @@ End Partial_order.
 
 Section sup.
 
-  Context {X} {P: CPO X} `{L : CompleteLattice X}.
+  Context {X} {P' : PO X} {P: CPO P'} {L : CompleteLattice P'}.
 
   Lemma leq_xsup (D : directed_set _) y: D y -> y <= sup D.
   Proof. intro H. now apply (sup_spec D). Qed.
 
-  Lemma leq_xsup_lat (Y:X->Prop) y : Y y -> y <= sup_lat Y.
-  Proof. intro H. now apply (sup_spec_lat Y). Qed.
+  Lemma leq_xsupL (Y:X->Prop) y : Y y -> y <= supL Y.
+  Proof. intro H. now apply (sup_specL Y). Qed.
 
   Lemma sup_is_independent_of_proof : forall D_dir D_dir2,
-      iff_part (Dbody D_dir) (Dbody D_dir2) ->
+      set_eq (Dbody D_dir) (Dbody D_dir2) ->
       sup D_dir == sup D_dir2.
   Proof.
     intros. apply weq_spec. split; apply sup_spec; intros; apply leq_xsup;
       now apply H.
   Qed.
 
-  Program Definition empty {Y} {Q : CPO Y}: directed_set leq :=
+  Program Definition empty : directed_set leq :=
     exist _ (fun _ => False) _.
   Next Obligation. unfold Directed. intros. contradict H. Defined.
 
@@ -160,19 +164,19 @@ Section sup.
   Lemma bot_spec: forall x, bot <= x.
   Proof. intro. now apply sup_spec. Qed.
 
-  Definition top_lat := sup_lat (fun _ => True). (* Rmk : only exists in lattices, not just CPOs. *)
+  Definition top_lat := supL (fun _ => True). (* Rmk : only exists in lattices, not just CPOs. *)
 
   Lemma top_spec_lat: forall x, x <= top_lat.
-  Proof. intro. now apply leq_xsup_lat. Qed.
+  Proof. intro. now apply leq_xsupL. Qed.
 
   (** Inf *)
 
-  Definition inf_lat Y := sup_lat (fun z => forall y, Y y -> z <= y).
+  Definition inf_lat Y := supL (fun z => forall y, Y y -> z <= y).
   Lemma inf_spec_lat: forall Y z, z <= inf_lat Y <-> (forall y, Y y -> z <= y).
   Proof.
     intros. unfold sup. split.
-    intros H y Yy. rewrite H; apply sup_spec_lat. now auto.
-    intro. now apply leq_xsup_lat.
+    intros H y Yy. rewrite H; apply sup_specL. now auto.
+    intro. now apply leq_xsupL.
   Qed.
 
   Lemma leq_xinf (D: X -> Prop) y:  D y -> inf_lat D <= y.
@@ -188,8 +192,8 @@ Section sup.
     now apply HST.
   Qed.
 
-  Definition iff_part_body (S T : directed_set leq) := iff_part S T.
-  #[global] Instance sup_preserves_equality: Proper (iff_part_body ==> weq) sup.
+  Definition set_eq_body (S T : directed_set leq) := set_eq S T.
+  #[global] Instance sup_preserves_equality: Proper (set_eq_body ==> weq) sup.
   Proof.
     intros S T HST. apply weq_spec. split; apply sup_preserves_inclusion; intros x Hx; now apply HST.
   Qed.
@@ -202,7 +206,7 @@ End sup.
 (** * Monotonous functions and other properties *)
 
 Section functions.
-  Context {X} {P: CPO X}.
+  Context {X} `{P: CPO X}.
 
   Definition Fix F x := F x == x.
   Definition Post F x := x <= F x.
@@ -252,7 +256,7 @@ Section functions.
                          Hbody x y H := H
                        |}.
 
-  Definition comp {Y} {Q : CPO Y} (f g: mon): mon :=
+  Definition comp (f g: mon): mon :=
     {|
       body := fun x => f (g x);
       Hbody x y H := Hbody f _ _ (Hbody g _ _ H)
@@ -308,7 +312,7 @@ Section functions.
     + exists (itere F n bot). repeat split. assumption. reflexivity. now apply chain_increase.
   Qed.
 
-  Lemma image_of_iteres F : iff_part (Image F (iteres F)) (iteres_from_1 F).
+  Lemma image_of_iteres F : set_eq (Image F (iteres F)) (iteres_from_1 F).
   Proof.
     intro. split; intro; inversion H. inversion H0.
     + assert (iteres_from_1 F (itere F (S n) bot)). apply from_bot_from_1. lia.
@@ -324,12 +328,26 @@ End functions.
 
 Section Particular_CPOs.
 
-  Context {X} {P: CPO X}.
+  Context {X} {P' : PO X} {P: CPO P'}.
 
-  Program Instance CPO_mon : CPO mon :=
+ Program Instance PO_mon : PO mon :=
     {|
       weq := pointwise_relation X weq;
       leq := pointwise_relation X leq;
+    |}.
+  Next Obligation.
+  apply Build_PreOrder.
+    + intro x. reflexivity.
+    + intros f g h Hfg Hgh x. now transitivity (g x).
+  Qed.
+  Next Obligation.
+    split; intros.
+    + split; intro a; now apply weq_spec.
+    + intro. now apply weq_spec.
+  Qed.
+
+  Program Instance CPO_mon : CPO PO_mon :=
+    {|
       sup F := {| body a := sup (fun b => exists2 f, F f & b=f a) |};
     |}.
   Next Obligation.
@@ -347,28 +365,17 @@ Section Particular_CPOs.
     transitivity (f y). rewrite H0. now apply Hbody.
     apply leq_xsup. cbn. now exists f.
   Qed.
-  Next Obligation. (*Rmk : symbol ":>" is to declare a trivial instance.*)
-    apply Build_PreOrder.
-    + intro x. reflexivity.
-    + intros f g h Hfg Hgh x. now transitivity (g x).
-  Qed.
-  Next Obligation.
-    split; intros.
-    + split; intro a; now apply weq_spec.
-    + intro. now apply weq_spec.
-  Qed.
   Next Obligation.
     destruct D as [SF D]; cbn in *. split.
     + intros H f Df x. rewrite <- (H x).
       eapply sup_spec. reflexivity. cbn. now exists f.
-                                               + intros H x. apply sup_spec. intros. inversion H0. rewrite H2. now apply (H x0).
+    + intros H x. apply sup_spec. intros. inversion H0. rewrite H2. now apply (H x0).
   Qed.
 
-  Program Instance CPO_parts: CPO (set X) :=
+  Program Instance PO_parts: PO (set X) :=
     {|
-      weq := iff_part;
+      weq := set_eq;
       leq := included;
-      sup A := (fun x => exists Y, A Y /\ Y x);
     |}.
   Next Obligation.
     apply Build_PreOrder.
@@ -378,15 +385,21 @@ Section Particular_CPOs.
   Next Obligation.
     repeat split; try intuition; intros a; intro H0; apply H; try apply H0.
   Qed.
+
+  Program Instance CPO_parts: CPO PO_parts :=
+    {|
+      sup A := (fun x => exists Y, A Y /\ Y x);
+    |}.
+  
   Next Obligation.
     split; intros; intros a Ha.
     apply H. now exists y.
     destruct Ha. apply (H x). apply H0. apply H0.
   Qed.
 
-  Program Instance Lattice_parts : CompleteLattice (CPO_parts) :=
+  Program Instance Lattice_parts : CompleteLattice (PO_parts) :=
     {|
-      sup_lat A := (fun x => exists Y, A Y /\ Y x);
+      supL A := (fun x => exists Y, A Y /\ Y x);
     |}.
   Next Obligation.
     split; intros; intros a Ha. apply H.
@@ -407,15 +420,22 @@ Section Particular_CPOs.
 
   Definition set_type (Y : set X) : Type := { x : X | Y x}.
   Definition element Y (y :set_type Y) := proj1_sig y.
+  #[global] Coercion element : set_type >-> X.
 
   Definition complete_body {Y : set X} (D : set (set_type Y)) : set X :=
     (fun x => {is_in_Y : Y x & D (exist _ x is_in_Y)}).
-
-  Program Definition subCPO (*{X} {P : CPO X}*) (Y:set X) (H : is_subCPO Y) : (CPO (set_type Y)) :=
+    
+  Program Instance subPO (Y:set X) : (PO (set_type Y)) :=
     {|
-      weq x y := (@weq X P) (element x) (element y);
-      leq x y := (@leq X P) (element x) (element y);
-      sup D := (@sup X P) (exist (Directed leq) (complete_body D) _) ;
+      weq x y := (@weq X P') x y;
+      leq x y := (@leq X P') x y;
+    |}.
+  Next Obligation. apply Build_PreOrder; intro x. reflexivity. intros y z Hxy Hyz. now transitivity y. Qed.
+  Next Obligation. apply weq_spec. Qed.
+
+  Program Instance subCPO (Y:set X) (H : is_subCPO Y) : (CPO (subPO Y)) :=
+    {|
+      sup D := sup (exist (Directed leq) (complete_body D) _) ;
     |}.
   Next Obligation.
     destruct D as [D Hd]. cbn. intros x y Hx Hy. inversion Hx. inversion Hy.
@@ -427,8 +447,6 @@ Section Particular_CPOs.
     apply H. intros x Hx.
     destruct D as [D Hd]; cbn in Hx. now destruct Hx.
   Qed.
-  Next Obligation. apply Build_PreOrder; intro x. reflexivity. intros y z Hxy Hyz. now transitivity (element y). Qed.
-  Next Obligation. apply weq_spec. Qed.
   Next Obligation.
     split.
     + intros. apply (sup_spec (exist (Directed leq) (complete_body D) (subCPO_obligation_1 D))); cbn.
@@ -436,6 +454,7 @@ Section Particular_CPOs.
       now exists y.
       + intros. apply sup_spec. cbn. intros. destruct H1. now apply (H0 (exist (fun x : X => Y x) y x)).
   Qed.
+
 
   (* Some instances that can now be defined on CPO_parts and CPO_mon. *)
 
@@ -447,7 +466,7 @@ Section Particular_CPOs.
   #[global] Instance set_incl : Proper (weq ==> weq ==> iff) included.
   Proof. intros Y1 Y2 H12 Y3 Y4 H34. split; intros Hi x Hx; apply H34; apply Hi; now apply H12. Qed.
 
-  Lemma set_eq : forall (f g : set X), f == g -> (pointwise_relation X iff) f g.
+  Lemma set_equivalent : forall (f g : set X), f == g -> (pointwise_relation X iff) f g.
   Proof.
     intros f g H x. split; intro Hh; apply weq_spec in H; destruct H.
     now apply H. now apply H0.
@@ -457,13 +476,13 @@ End Particular_CPOs.
 
 Ltac rew H H' :=
   let eq := fresh in
-  pose proof @set_eq _ _ H as eq;
+  pose proof @set_equivalent _ _ H as eq;
   apply eq in H';
   clear eq.
 
 Ltac rew_goal H :=
   let eq := fresh in
-  pose proof @set_eq _ _ H as eq;
+  pose proof @set_equivalent _ _ H as eq;
   apply eq;
   clear eq.
 
@@ -475,12 +494,12 @@ Tactic Notation "prew" constr(H) := rew_goal H.
 (** * Common fixpoint of every monotonous increasing function *)
 
 Section Increasing_fixpoint.
-  Context {X} {P: CPO X}.
+    Context {X} `{P: CPO X}.
 
   Definition Increasing F := forall x, x <= F x.
 
-  Definition leq_mon := (@leq mon CPO_mon).
-  Definition weq_mon := (@weq mon CPO_mon).
+  Definition leq_mon := (@leq mon PO_mon).
+  Definition weq_mon := (@weq mon PO_mon).
 
   Program Definition Increasing_functions := exist (Directed leq_mon) Increasing _.
   Next Obligation.
@@ -490,16 +509,16 @@ Section Increasing_fixpoint.
     + intro x. cbn. apply Hf.
   Defined.
 
-  Definition H_sup := (sup Increasing_functions).
+  Definition H_sup := (sup (CPO := CPO_mon) Increasing_functions).
 
   Lemma H_sup_is_increasing : Increasing H_sup.
-  Proof. intro. assert (leq_mon id H_sup). now apply (sup_spec Increasing_functions). apply H. Qed.
+  Proof. intro. assert (leq_mon id H_sup). now apply (sup_spec (CPO := CPO_mon) Increasing_functions). apply H. Qed.
 
   Lemma H_sup_bot_is_fixpoint_of_all_Increasing (F:mon) :
     Increasing F -> Fix F (H_sup bot).
   Proof.
     intro. assert (weq_mon (comp F H_sup) H_sup).
-    + apply weq_spec. split. apply (sup_spec Increasing_functions). reflexivity.
+    + apply weq_spec. split. apply (sup_spec (CPO := CPO_mon) Increasing_functions). reflexivity.
       intro x. transitivity (H_sup x). apply H_sup_is_increasing. apply H.
       intro. apply H.
     + unfold Fix. now setoid_rewrite (H0 bot).
@@ -518,7 +537,7 @@ End Increasing_fixpoint.
 
 Section Invariant_subCPOs.
 
-  Context {X} {P: CPO X}.
+  Context {X} `{P: CPO X}.
 
   Definition Invariant (F : X -> X) Y := included (Image F Y) Y.
 
@@ -546,18 +565,18 @@ Section lattice_results.
   Context {X} `{L: CompleteLattice X}.
   Variable b: mon.
 
-  Definition gfp := sup_lat (fun x => x <= b x).
+  Definition gfp := supL (fun x => x <= b x).
   Definition lfp := inf_lat (fun x => b x <= x).
 
   Proposition leq_gfp: forall y, y <= b y -> y <= gfp.
-  Proof. apply leq_xsup_lat. Qed.
+  Proof. apply leq_xsupL. Qed.
   Proposition geq_lfp: forall y, b y <= y -> lfp <= y.
   Proof. apply leq_xinf. Qed.
 
   Lemma gfp_pfp: gfp <= b gfp.
   Proof.
-    unfold gfp. apply sup_spec_lat. intros y H. rewrite H. apply Hbody.
-    apply leq_xsup_lat. apply H.
+    unfold gfp. apply sup_specL. intros y H. rewrite H. apply Hbody.
+    apply leq_xsupL. apply H.
   Qed.
   Lemma lfp_pfp: b lfp <= lfp.
   Proof.
@@ -569,7 +588,7 @@ Section lattice_results.
   Proof.
     rewrite weq_spec. split.
     + apply gfp_pfp.
-    + apply leq_xsup_lat. apply Hbody. apply gfp_pfp.
+    + apply leq_xsupL. apply Hbody. apply gfp_pfp.
   Qed.
   Lemma lfp_fp: lfp == b lfp.
   Proof.
@@ -585,9 +604,9 @@ Section Using_Tarski.
   (* Remark : although this section is used in the proofs of the book, it is not used throughout this file.
 It is enough to work with P0 as the smallest invariant subCPO, no need to use its properties of least fixpoint. *)
 
-  Context {X} {P: CPO X}.
+  Context {X} `{P: CPO X}.
 
-  Program Definition Φ F' : @mon (set X) (CPO_parts) :=  (*since def of mon is linked to that of CPOs, need a CPO of parts*)
+  Program Definition Φ F' : @mon (set X) (PO_parts) :=  (*since def of mon is linked to that of POs, need a PO of parts*)
     {| body X := (fun x =>
                     (x = bot \/
                      (Image F' X) x \/
@@ -601,18 +620,18 @@ It is enough to work with P0 as the smallest invariant subCPO, no need to use it
       intros y Hy. apply H12. now apply Hi. assumption.
   Qed.
 
-  Definition P0' F' := (@lfp (set X) CPO_parts Lattice_parts) (Φ F').
+  Definition P0' F' := lfp (L := Lattice_parts) (Φ F').
 
-  Lemma P0_is_P0' F : (@weq (set X) CPO_parts) (P0 F) (P0' F).
+  Lemma P0_is_P0' F : set_eq (P0 F) (P0' F).
   Proof.
-    apply weq_spec. split.
+    split.
     + apply P0_is_smallest_invariant_subCPO.
     - unfold Invariant. unfold P0'. rewrite lfp_fp at 2.
       intros x H. right. now left.
     - unfold is_subCPO. unfold P0'. intros D H.
-      apply (set_eq (lfp_fp (Φ F))). (* prew does not work *)
+      apply (set_equivalent (lfp_fp (Φ F))). (* prew does not work *)
       right. right. now exists D.
-                          + unfold P0'. apply geq_lfp. intros x H.
+                          + unfold P0'. apply (geq_lfp (L := Lattice_parts)). intros x H.
                             destruct (P0_is_invariant_subCPO F). destruct H. rewrite H.
                             apply (H1 empty). intros y Hy. contradict Hy.
                             destruct H. inversion H. apply H0. now apply from_image.
@@ -625,13 +644,13 @@ End Using_Tarski.
 (** * Fixpoint theorems ! *)
 
 Section Fixpoints.
-  Context {X} {P: CPO X}.
+  Context {X} `{P: CPO X}.
 
-  Definition is_least {Y} {Q : CPO Y} S x := S x /\ forall y, S y -> x <= y.
-  Definition is_inf {Y} {Q : CPO Y} S x := forall z, (forall y, S y -> z <= y) <-> z <= x.
-  Definition is_minimal {Y} {Q : CPO Y} S x := S x /\ forall y, S y -> y <= x -> y == x.
-  Definition is_greatest {Y} {Q : CPO Y} S x := S x /\ forall y, S y -> y <= x.
-  Definition is_sup {Y} {Q : CPO Y} S x := forall z, (forall y, S y -> y <= z) <-> x <= z.
+  Definition is_least S x := S x /\ forall y, S y -> x <= y.
+  Definition is_inf S x := forall z, (forall y, S y -> z <= y) <-> z <= x.
+  Definition is_minimal S x := S x /\ forall y, S y -> y <= x -> y == x.
+  Definition is_greatest S x := S x /\ forall y, S y -> y <= x.
+  Definition is_sup S x := forall z, (forall y, S y -> y <= z) <-> x <= z.
 
   Lemma test_coherence1 : forall (D : directed_set _), is_sup D (sup D).
   Proof. intros D z. split; apply sup_spec. Qed.
@@ -672,7 +691,7 @@ Section Fixpoints.
     assert (Fix F α).
     + unfold Fix. destruct (H (iteres F) (iteres_directed F)) as [HD HS].
       transitivity α'; try now rewrite sup_from_1. rewrite HS.
-      apply sup_is_independent_of_proof. cbn. unfold iff_part. apply image_of_iteres.
+      apply sup_is_independent_of_proof. cbn. unfold set_eq. apply image_of_iteres.
     + now apply Fixpoint_I_i.
   Qed.
 
@@ -709,11 +728,12 @@ Section Fixpoints.
       + now apply P0_is_smallest_invariant_subCPO.
   Qed.
 
-  Program Instance P0_CPO : CPO (set_type (P0 F)) := (subCPO _).
+  Program Instance P0_PO : PO (set_type (P0 F)) := (subPO _).
+  Program Instance P0_CPO : CPO P0_PO := (subCPO _).
   Next Obligation. apply P0_is_invariant_subCPO. Qed.
 
-  Program Definition F_restricted_to_P0 : @mon (set_type (P0 F)) P0_CPO :=
-    {| body := fun y => (exist _ (F (element y)) _) |}.
+  Program Definition F_restricted_to_P0 : mon :=
+    {| body := fun y => (exist _ (F y) _) |}.
   Next Obligation. destruct y as [x Hx]; cbn. apply P0_is_invariant_subCPO. now apply from_image. Qed.
   Next Obligation. intros y1 y2 H12; cbn. now apply Hbody. Qed.
 
@@ -754,12 +774,12 @@ End Fixpoints.
 
 Section Bourbaki_Witt.
 
-  Context {X} {P: CPO X}.
+  Context {X} `{P: CPO X}.
   Definition classic_axiom := forall (P : Prop), P \/ ~ P.
 
   (* Now show that P0 is a chain, to prove that it has a sup (top). This is a fixpoint. *)
 
-  Definition lt {Y} {Q : CPO Y} x y := x <= y /\ ~ (x == y).
+  Definition lt x y := x <= y /\ ~ (x == y).
   Infix "<" := lt.
 
   Lemma leq_is_lt_or_eq : classic_axiom -> forall x y, x <= y -> x==y \/ x < y. (* excluded middle ! *)
@@ -774,7 +794,7 @@ Section Bourbaki_Witt.
   Definition Mc F' c : set X :=
     (fun x => (P0 F') x /\ (x <= c \/ F' c <= x)).
 
-  Lemma Mc_is_P0 F' : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> forall c, Extreme F' c -> iff_part (P0 F') (Mc F' c).
+  Lemma Mc_is_P0 F' : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> forall c, Extreme F' c -> set_eq (P0 F') (Mc F' c).
   Proof.
     intros EM Fp HF c Ec. destruct Ec as [Pc Ec']. split.
     + apply P0_is_smallest_invariant_subCPO.
@@ -797,8 +817,8 @@ Section Bourbaki_Witt.
     intros EM Fp HF. apply P0_is_smallest_invariant_subCPO.
     + intros c Hc. inversion Hc. inversion H as [HPx HEx]. split.
     - apply P0_is_invariant_subCPO. now apply from_image.
-    - intros. assert (iff_part (P0 F') (Mc F' x)). apply (Mc_is_P0 EM Fp HF H).
-      assert (Mc F' x x0). now rewrite <- (set_eq H3 x0). destruct H4. destruct H5.
+    - intros. assert (set_eq (P0 F') (Mc F' x)). apply (Mc_is_P0 EM Fp HF H).
+      assert (Mc F' x x0). now rewrite <- (set_equivalent H3 x0). destruct H4. destruct H5.
       * apply leq_is_lt_or_eq in H5; intuition.
         apply weq_spec. now apply Fp. transitivity x; intuition.
       * exfalso. eapply not_leq_and_gt. split. apply H5. apply H2.
@@ -846,3 +866,25 @@ fixpoints between bottom and our fix point is a chain. TODO ? *)
   Qed.
 
 End Bourbaki_Witt.
+
+
+(*
+Section CounterExample.
+
+ Variant CPO_set : Set := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
+
+ Inductive leq3 : rel CPO_set :=
+  | reflexive: forall x, leq3 x x
+  | transitive: forall x y z, leq3 x y -> leq3 y z -> leq3 x z
+  | bot_x1: leq3 bottom x1
+  | x1_x2: leq3 x1 x2.
+
+
+ Program Definition CPO_ex: CPO CPO_set :=
+  {| weq x y := leq_ex x y /\ leq_ex y x;
+     leq := leq_ex;
+     sup D := 
+  |}.
+
+End CounterExample.
+*)
