@@ -31,8 +31,9 @@ Class CPO (X: Type) `(P' : PO X) := {
 
 (* Definition of Lattice as a particular (stronger) CPO. *)
 Class CompleteLattice (X : Type) `(L' : PO X) := {
-    supL: (X -> Prop) -> X;
-    sup_specL:  forall Y z, (leq (supL Y) z <-> forall y, Y y -> leq y z);
+    supL: (X -> Prop) -> X -> Prop;
+    sup_specL: forall Y d, supL Y d <-> (forall z, (leq d z <-> forall (y:X), Y y -> leq y z));
+    sup_existsL : forall D, exists d, supL D d (*restricted to directed set as here*)
   }.
 
 (* Scopes are a way to guide parsing when overloading a symbol.
@@ -144,8 +145,8 @@ Section sup.
   Lemma leq_xsup (D : directed_set _) y: D y -> forall d, sup D d -> y <= d.
   Proof. intros H d Sd. now apply (sup_spec D d). Qed.
 
-  Lemma leq_xsupL (Y:X->Prop) y : Y y -> y <= supL Y.
-  Proof. intro H. now apply (sup_specL Y). Qed.
+  Lemma leq_xsupL (Y:X->Prop) y : Y y -> forall d, supL Y d -> y <= d.
+  Proof. intros H d Sd. now apply (sup_specL Y d). Qed.
 
   Lemma sup_is_independent_of_proof : forall D_dir D_dir2,
       set_eq (Dbody D_dir) (Dbody D_dir2) -> forall d, sup D_dir d <-> sup D_dir2 d.
@@ -170,13 +171,17 @@ Qed.
   Lemma exists_bot : exists bot, is_bot bot.
   Proof. destruct (sup_exists empty) as [bot Hbot]. now exists bot. Qed.
 
-  Definition top_lat := supL (fun _ => True). (* Rmk : only exists in lattices, not just CPOs. *)
+  Program Definition full : set X := (fun _ => True).
+  Definition is_topL := supL (fun _ => True). (* Rmk : only exists in lattices, not just CPOs. *)
 
-  Lemma top_spec_lat: forall x, x <= top_lat.
+  Lemma top_specL: forall x top, is_topL top -> x <= top.
   Proof. intro. now apply leq_xsupL. Qed.
+  
+  Lemma exists_topL : exists top, is_topL top.
+  Proof. destruct (sup_existsL full) as [top Htop]. now exists top. Qed.
 
   (** Inf *)
-
+(*
   Definition inf_lat Y := supL (fun z => forall y, Y y -> z <= y).
   Lemma inf_spec_lat: forall Y z, z <= inf_lat Y <-> (forall y, Y y -> z <= y).
   Proof.
@@ -187,7 +192,8 @@ Qed.
 
   Lemma leq_xinf (D: X -> Prop) y:  D y -> inf_lat D <= y.
   Proof. intro H. now apply inf_spec_lat with D. Qed.
-  
+*)
+
   Lemma sup_unicity : forall D d1 d2, sup D d1 -> sup D d2 -> d1 == d2.
   Proof.
     intros D d1 d2 H1 H2. apply weq_spec. split; eapply sup_spec.
@@ -249,6 +255,13 @@ Section functions.
                        Hfun: forall x, exists y, body_prop x y /\ forall y', (body_prop x y' <-> y == y')
                      }.
  
+  Program Definition from_mon (F:mon) : mon_prop :=
+    {|
+      body_prop x y := y == F x;
+    |}.
+  Next Obligation. rewrite H0, H1. now apply Hbody. Qed.
+  Next Obligation. now exists (F x). Qed.
+
   Definition is_correct (f:mon_prop) := forall x1 x2 y, x1 == x2 -> (f x1 y) <-> (f x2 y).
 
   #[global] Instance Hbody' (F:mon) : Proper (weq ==> weq) F.
@@ -752,7 +765,7 @@ End Invariant_subCPOs.
 
 
 (* Knaster-Tarski Theorem on Lattices *)
-
+(*
 Section lattice_results.
   Context {X} `{L: CompleteLattice X}.
   Variable b: mon.
@@ -788,9 +801,8 @@ Section lattice_results.
     + apply leq_xinf. apply Hbody. apply lfp_pfp.
     + apply lfp_pfp.
   Qed.
-
 End lattice_results.
-
+*)
 
 Section Using_Tarski.
   (* Remark : although this section is used in the proofs of the book, it is not used throughout this file.
@@ -933,37 +945,35 @@ Section Fixpoints.
     {| body := fun y => (exist _ (F y) _) |}.
   Next Obligation. destruct y as [x Hx]; cbn. apply P0_is_invariant_subCPO. assumption. now apply from_image. Qed.
   Next Obligation. intros y1 y2 H12; cbn. now apply Hbody. Qed.
-  
-  (* TODO : turn a "mon" into a "mon_prop"*)
 
-  Lemma F_restricted_is_increasing : Increasing F_restricted_to_P0.
+  Lemma F_restricted_is_increasing (c : correct_set (X := X)) : Increasing (F_restricted_to_P0 c).
   Proof. intro y. destruct y as [x Hx]; cbn. now apply P0_is_in_Post. Qed.
+  
+  Lemma F_prop_still_increasing {Y} {PY : PO Y} (G:@mon Y PY): Increasing G -> Increasing_prop (from_mon G).
+  Proof. intros H x y HGxy. cbn in HGxy. rewrite HGxy. apply H. Qed.
 
-  Theorem Fixpoint_II : exists x, Fix F x.
+  Lemma F_prop_restricted_is_increasing (c : correct_set (X := X)) : Increasing_prop (from_mon (F_restricted_to_P0 c)).
+  Proof. apply (F_prop_still_increasing (F_restricted_to_P0 c) (F_restricted_is_increasing c)). Qed.
+
+  Theorem Fixpoint_II (c : correct_set (X := X)) (c' : correct) : exists x, Fix F x.
   Proof.
-    destruct (increasing_has_fix_point F_restricted_to_P0 F_restricted_is_increasing).
-    destruct x as [x Hx]. cbn in H. now exists x.
+    destruct (increasing_has_fix_point (P := P0_CPO c) (from_mon (F_restricted_to_P0 c)) c' (F_prop_restricted_is_increasing c)).
+    destruct x as [x Hx]. cbn in H. exists x. unfold Fix. symmetry. apply H.
   Qed.
-
+  
   (* Actually, we can go further. Since we constructively built the fixpoint of G as being (H_sup bot) for a well-chosen CPO.
  So we can define this fixpoint and add the results from Claim 3 of the theorem : it is both the top of P0 and the least fixpoint of F.*)
 
-  Definition a := (H_sup bot). (*Here a is of type (set_type P0) since this was the last CPO to be defined.
- It's what we want, no need to specify implicit arguments. *)
-
-  Lemma a_is_fixpoint_of_F : Fix F (element a).
+  Theorem exists_top_of_P0_and_least_fixpoint_of_F (c : correct_set (X := X)) (c' : correct):
+    exists (a : set_type (P0 F)), is_greatest (P0 F) (element a) /\ is_least (Fix F) (element a).
   Proof.
-    assert (Fix F_restricted_to_P0 a). apply H_sup_bot_is_fixpoint_of_all_Increasing. apply F_restricted_is_increasing.
-    destruct a as [a Ha]. now cbn in *.
-  Qed.
-
-  Theorem a_is_top_of_P0_and_least_fixpoint_of_F :
-    is_greatest (P0 F) (element a) /\ is_least (Fix F) (element a).
-  Proof. split.
-         + split. destruct a as [µ Hmu]. now cbn. apply P0_is_in_down.
-           intros. apply a_is_fixpoint_of_F.
-         + split. apply a_is_fixpoint_of_F. intros. apply (P0_is_in_down y).
-           assumption. destruct a as [µ Hmu]. now cbn.
+  destruct (increasing_has_fix_point (P := P0_CPO c) (from_mon (F_restricted_to_P0 c)) c' (F_prop_restricted_is_increasing c)) as [a ?].
+    destruct a as [a Ha]. cbn in H. exists (exist _ a Ha).
+   split.
+         + split. now cbn. apply P0_is_in_down.
+           intros. cbn. unfold Fix. now symmetry.
+         + split. cbn. unfold Fix. now symmetry. intros. apply (P0_is_in_down y).
+           assumption. now cbn.
   Qed.
 
 End Fixpoints.
@@ -986,6 +996,16 @@ Section Bourbaki_Witt.
 
   Lemma not_leq_and_gt : forall x y, ~ (x <= y /\ y < x). (* no need for EM *)
   Proof. intros x y. intro. destruct H. destruct H0. contradict H1. now apply weq_spec. Qed.
+  
+  Lemma lt_preserves_eq : forall x y z, x==y -> (z < x <-> z < y).
+  Proof. intros x y z Hxy. split; intro H. split; rewrite <- Hxy; apply H.
+    split; rewrite Hxy; apply H. Qed.
+    
+  Lemma lt_leq_transitivity : forall x y z, x < y -> y <= z -> x < z.
+  Proof. intros x y z Hxy Hyz. split. transitivity y. apply Hxy. assumption.
+    intro. assert (x == y). apply weq_spec. split. apply Hxy. now rewrite H. destruct Hxy.
+    contradiction.
+  Qed.
 
   Definition Extreme F' : set X :=
     (fun c => (P0 F') c /\ forall x, (P0 F') x -> x < c -> F' x <= c).
@@ -993,51 +1013,55 @@ Section Bourbaki_Witt.
   Definition Mc F' c : set X :=
     (fun x => (P0 F') x /\ (x <= c \/ F' c <= x)).
 
-  Lemma Mc_is_P0 F' : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> forall c, Extreme F' c -> set_eq (P0 F') (Mc F' c).
+  Lemma Mc_is_P0 F' (C : correct_set) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> forall c, Extreme F' c -> set_eq (P0 F') (Mc F' c).
   Proof.
     intros EM Fp HF c Ec. destruct Ec as [Pc Ec']. split.
     + apply P0_is_smallest_invariant_subCPO.
-    - intros x Hx. inversion Hx. split. apply P0_is_invariant_subCPO. apply from_image. apply H.
+    - intros x Hx. inversion Hx. split. apply P0_is_invariant_subCPO. apply C. apply from_image. apply H.
       destruct H as [Px0 Hx0]. destruct Hx0.
       * apply leq_is_lt_or_eq in H. destruct H. right. apply weq_spec. now apply Fp.
         left. now apply Ec'. assumption.
       * right. transitivity x0. assumption. apply HF.
-    - intros D Hi. split.
-      apply P0_is_invariant_subCPO. rewrite Hi. intros x0 Hx0. apply Hx0.
+    - intros D Hi. destruct (sup_exists D) as [d Hd]. exists d. split; try assumption.
+      destruct P0_is_invariant_subCPO with F'. apply C. destruct H0 with D. rewrite Hi. intros x0 Hx0. apply Hx0.
+      split. apply (C (P0 F')) with x. now apply sup_unicity with D. apply H1.
       destruct (EM (exists y, D y /\ F' c <= y)). (* WARNING : excluded middle ! *)
-      * right. destruct H as [y Hy]. transitivity y. apply Hy. now apply leq_xsup.
-      * left. apply sup_spec. intros. destruct (Hi y). assumption.
-        destruct H2. assumption. contradict H. now exists y.
+      * right. destruct H2 as [y Hy]. transitivity y. apply Hy. now apply leq_xsup with D.
+      * left. eapply sup_spec. apply Hd. intros. destruct (Hi y). assumption.
+        destruct H5. assumption. contradict H2. now exists y.
                                                      + intro Hm. apply Hm.
   Qed.
 
-  Lemma P0_is_extreme F' : classic_axiom -> (Proper (weq ==> weq) F') ->  Increasing F' -> forall x, P0 F' x -> Extreme F' x.
+  Lemma P0_is_extreme F' (C : correct_set) : classic_axiom -> (Proper (weq ==> weq) F') ->  Increasing F' -> forall x, P0 F' x -> Extreme F' x.
   Proof.
     intros EM Fp HF. apply P0_is_smallest_invariant_subCPO.
     + intros c Hc. inversion Hc. inversion H as [HPx HEx]. split.
-    - apply P0_is_invariant_subCPO. now apply from_image.
-    - intros. assert (set_eq (P0 F') (Mc F' x)). apply (Mc_is_P0 EM Fp HF H).
+    - apply P0_is_invariant_subCPO. apply C. now apply from_image.
+    - intros. assert (set_eq (P0 F') (Mc F' x)). apply (Mc_is_P0 C EM Fp HF H).
       assert (Mc F' x x0). now rewrite <- (set_equivalent H3 x0). destruct H4. destruct H5.
       * apply leq_is_lt_or_eq in H5; intuition.
         apply weq_spec. now apply Fp. transitivity x; intuition.
       * exfalso. eapply not_leq_and_gt. split. apply H5. apply H2.
-      + intros D Ed. split. apply P0_is_invariant_subCPO. rewrite Ed. intros x Hx. apply Hx.
-        intros x Px Hxd. destruct (EM (exists c, D c /\ x <= c)).
-    - destruct H as [c [Hdc Hcx]]. apply leq_is_lt_or_eq in Hcx; intuition.
+      + intros D Ed. destruct (sup_exists D) as [d Hd]. exists d. split; try assumption.
+      destruct P0_is_invariant_subCPO with F'. apply C. destruct H0 with D. rewrite Ed. intros x0 Hx0. apply Hx0.
+      split. apply (C (P0 F')) with x. now apply sup_unicity with D. apply H1.
+        intros x0 Px0 Hx0d. destruct (EM (exists c, D c /\ x0 <= c)).
+    - destruct H2 as [c [Hdc Hcx0]]. apply leq_is_lt_or_eq in Hcx0; intuition.
       * transitivity (F' c). apply weq_spec. now apply Fp.
-        assert (Mc F' c (sup D)). apply Mc_is_P0; intuition. apply P0_is_invariant_subCPO.
-        rewrite Ed. intros y Hy. apply Hy.
-        destruct H0. destruct H1. exfalso. eapply not_leq_and_gt. split. rewrite <- H in H1.
-        apply H1. apply Hxd. assumption.
-      * transitivity c. apply Ed; intuition. now apply leq_xsup.
-    - assert (sup D <= x).
-      * apply sup_spec. intros. rewrite HF. assert (Mc F' y x). apply Mc_is_P0; intuition.
-        destruct H1. destruct H2. contradict H. now exists y. assumption.
-                                                      * exfalso. eapply not_leq_and_gt. split. apply H0. assumption.
+        assert (Mc F' c x). apply Mc_is_P0; intuition. destruct P0_is_invariant_subCPO with F'. apply C.
+          destruct H0 with D. rewrite Ed. intros z0 Hz0. apply Hz0.
+        destruct H4. destruct H8. exfalso. eapply not_leq_and_gt. split. apply weq_spec. apply H1. 
+        apply (lt_leq_transitivity c Hx0d). assert (d == x). now apply sup_unicity with D. 
+        now rewrite H9. assert (d == x). now apply sup_unicity with D. now rewrite H9.
+      * transitivity c. apply Ed; intuition. now apply leq_xsup with D.
+    - assert (d <= x0).
+      * eapply sup_spec. apply Hd. intros. rewrite HF. assert (Mc F' y x0). apply Mc_is_P0; intuition.
+        destruct H4. destruct H5. contradict H2. exists y. now split. assumption.
+      * exfalso. eapply not_leq_and_gt. split. apply H3. assumption.
   Qed.
 
 
-  Lemma P0_is_Chain (F':X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> is_Chain (P0 F').
+  Lemma P0_is_Chain (F':X -> X) (C : correct_set): classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> is_Chain (P0 F').
   Proof.
     intros EM Fp HF x y Hx Hy. assert (Mc F' x y).
     apply Mc_is_P0; intuition. apply P0_is_extreme; intuition.
@@ -1045,7 +1069,7 @@ Section Bourbaki_Witt.
     apply HF. assumption.
   Qed.
 
-  Lemma P0_is_directed (F':X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> Directed leq (P0 F').
+  Lemma P0_is_directed (F':X -> X) (C : correct_set) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> Directed leq (P0 F').
   Proof. intros EM Fp HF. apply chain_is_directed. now apply P0_is_Chain. Qed.
 
   (* Note : since we put excluded middle and functional extensionality as hypothesis, we lose constructivity,
@@ -1056,34 +1080,164 @@ Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
   (*The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper)
 However, from an existing fix point, it seems we can deduce a minimal fix point since the set of
 fixpoints between bottom and our fix point is a chain. TODO ? *)
-  Theorem Fixpoint_III (F' : X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x(*is_minimal (Fix F') x*).
+  Theorem Fixpoint_III (F' : X -> X) (C : correct_set) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x(*is_minimal (Fix F') x*).
   Proof.
-    intros EM Fp HF. exists (sup (exist _ (P0 F') (P0_is_directed EM Fp HF))).
-    apply weq_spec. split. apply leq_xsup; cbn. apply P0_is_invariant_subCPO.
-    apply from_image. apply P0_is_invariant_subCPO; cbn. intro. now intro.
-    apply sup_spec; cbn. intros. rewrite <- HF. now apply leq_xsup.
+    intros EM Fp HF. destruct (sup_exists (exist _ (P0 F') (P0_is_directed C EM Fp HF))) as [a Ha].
+    exists a.
+    apply weq_spec. split. eapply leq_xsup. 2: apply Ha. cbn. apply P0_is_invariant_subCPO. assumption.
+    apply from_image. destruct P0_is_invariant_subCPO with F'. assumption.
+    destruct H0 with (exist (Directed leq) (P0 F') (P0_is_directed C EM Fp HF)); cbn. now intro.
+    apply (C (P0 F')) with x. eapply sup_unicity. apply Ha. apply H1. apply H1.
+    eapply sup_spec. apply Ha. cbn. intros. rewrite <- HF. eapply leq_xsup. 2: apply Ha. now cbn.
   Qed.
 
 End Bourbaki_Witt.
 
 
-(*
+
 Section CounterExample.
 
  Variant CPO_set : Set := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
 
  Inductive leq3 : rel CPO_set :=
   | reflexive: forall x, leq3 x x
-  | transitive: forall x y z, leq3 x y -> leq3 y z -> leq3 x z
+  | bot_x2: leq3 bottom x2
   | bot_x1: leq3 bottom x1
   | x1_x2: leq3 x1 x2.
+  
+  Instance order_leq3 : PreOrder leq3.
+  Proof. repeat constructor. intros x y z.
+    intros Hxy Hyz. destruct x; destruct y; destruct z; try constructor;
+    try inversion Hxy; try inversion Hyz. Qed.
 
-
- Program Definition CPO_ex: CPO CPO_set :=
-  {| weq x y := leq_ex x y /\ leq_ex y x;
-     leq := leq_ex;
-     sup D := 
+Program Instance PO_ex : PO CPO_set:=
+  {|
+    weq x y := leq3 x y /\ leq3 y x;
+     leq := leq3;
   |}.
+  
+  Lemma bot_inf : forall (x : CPO_set), leq bottom x.
+  Proof. intro x. case x. reflexivity. apply bot_x1. transitivity x1; constructor. Qed.
+  
+  Lemma decidable_ex : forall x y, x = y <-> x == y.
+  Proof. split; intro H. now rewrite H. inversion H. inversion H0; try reflexivity;
+  rewrite <- H2 in *; rewrite <- H3 in *; inversion H1. Qed.
 
+ Program Instance CPO_ex (EM : classic_axiom) : CPO PO_ex :=
+  {| 
+     sup D x := (D x2 /\ weq x x2) 
+                \/ (~ D x2 /\ D x1 /\ weq x x1) 
+                \/ (~  D x2 /\ ~ D x1 /\  weq x bottom)
+  |}.
+  Next Obligation.
+    split; intro H. destruct H; destruct H.
+    + apply decidable_ex in H0. rewrite H0. 
+      intro z. split. intros Hdz y HDy. rewrite <- Hdz. case y; constructor. intro Hz. now apply Hz.
+    + destruct H. destruct H0. apply decidable_ex in H1. rewrite H1.
+      intro z. split. intros Hdz y HDy. rewrite <- Hdz. destruct y; try constructor. contradiction.
+      intro Hz. now apply Hz.
+    + destruct H. destruct H0. apply decidable_ex in H1. rewrite H1.
+      intro z. split. intros Hdz y HDy. rewrite <- Hdz. destruct y; try constructor. contradiction. contradiction.
+      intro Hz. apply bot_inf.
+    + destruct (EM (D x2)).
+      - destruct (H d) as [Supd _]. left. split; intuition. destruct (H x2) as [_ Infd].
+        apply Infd. intros. case y; constructor.
+      - right. destruct (EM (D x1)).
+        left. destruct (H d) as [Supd _]. split; intuition. destruct (H x1) as [_ Infd].
+          apply Infd. intros. destruct y; try constructor. contradiction.
+        right. destruct (H d) as [Supd _]. split; intuition. destruct (H bottom) as [_ Infd].
+          apply Infd. intros. destruct y; try contradiction. constructor. apply bot_inf.
+  Qed.
+  Next Obligation. destruct (EM (D x2)). exists x2. now left.
+    destruct (EM (D x1)). exists x1. right. now left.
+    exists bottom. right. now right. Qed.
+  
+  Program Instance Lattice_ex (EM : classic_axiom) : CompleteLattice PO_ex :=
+  {|
+    supL D x := (D x2 /\ weq x x2) 
+                \/ (~ D x2 /\ D x1 /\ weq x x1) 
+                \/ (~  D x2 /\ ~ D x1 /\  weq x bottom)
+  |}.
+ Next Obligation.
+  split; intro H. destruct H; destruct H.
+    + apply decidable_ex in H0. rewrite H0. 
+      intro z. split. intros Hdz y HDy. rewrite <- Hdz. case y; constructor. intro Hz. now apply Hz.
+    + destruct H. destruct H0. apply decidable_ex in H1. rewrite H1.
+      intro z. split. intros Hdz y HDy. rewrite <- Hdz. destruct y; try constructor. contradiction.
+      intro Hz. now apply Hz.
+    + destruct H. destruct H0. apply decidable_ex in H1. rewrite H1.
+      intro z. split. intros Hdz y HDy. rewrite <- Hdz. destruct y; try constructor. contradiction. contradiction.
+      intro Hz. apply bot_inf.
+    + destruct (EM (Y x2)).
+      - destruct (H d) as [Supd _]. left. split; intuition. destruct (H x2) as [_ Infd].
+        apply Infd. intros. case y; constructor.
+      - right. destruct (EM (Y x1)).
+        left. destruct (H d) as [Supd _]. split; intuition. destruct (H x1) as [_ Infd].
+          apply Infd. intros. destruct y; try constructor. contradiction.
+        right. destruct (H d) as [Supd _]. split; intuition. destruct (H bottom) as [_ Infd].
+          apply Infd. intros. destruct y; try contradiction. constructor. apply bot_inf.
+  Qed.
+  Next Obligation. destruct (EM (D x2)). exists x2. now left.
+    destruct (EM (D x1)). exists x1. right. now left.
+    exists bottom. right. now right. Qed.
+  
+  Program Definition F : CPO_set -> CPO_set := fun x => match x with
+      | bottom => x2
+      | x1 => x1
+      | x2 => x2
+    end.
+ 
+  Lemma Increasing_F : Increasing F.
+  Proof. intro x. destruct x; cbn; constructor. Qed.
+  Check is_greatest. Print is_greatest.
+ 
+ Lemma Proper_F : Proper (weq ==> weq) F.
+ Proof. intros x y Hxy. apply decidable_ex in Hxy. now rewrite Hxy. Qed.
+ 
+ Lemma all_correct : forall (Y : set CPO_set), Proper (weq ==> iff) Y.
+ Proof. intros Y x y Hxy. apply decidable_ex in Hxy. now rewrite Hxy. Qed.
+ 
+ Definition P0_ex (EM : classic_axiom) := (@P0 CPO_set PO_ex (CPO_ex EM) F).
+ 
+ Definition P0' : set CPO_set := fun x => (x == bottom \/ x == x2).
+ Lemma P0'_is_invariant_subCPO (EM : classic_axiom) : Invariant F P0' /\ (@is_subCPO CPO_set PO_ex (CPO_ex EM)) P0'.
+ Proof. split.
+  + intros x Hx. destruct x. now left. inversion Hx. inversion H0; apply decidable_ex in H1; rewrite H1 in H; contradict H;
+    now cbn. now right.
+  + intros D HDP. destruct (EM (D x2)). exists x2. split. now apply HDP. cbn. now left. exists bottom.
+    split. now left. apply sup_spec. intros. split; intuition. destruct y. apply bot_inf. exfalso. apply HDP in H1.
+    inversion H1; apply decidable_ex in H2; inversion H2. contradiction. apply bot_inf. Qed.
+ 
+ Lemma P0_is_P0' (EM : classic_axiom) : set_eq (P0_ex EM) P0'.
+ Proof. intro. split; intro.
+  + apply (H P0'); apply P0'_is_invariant_subCPO; try apply EM; apply decidable_ex in H0; rewrite H0 in *.
+  + destruct z. 
+    - intros Y Hi Hs. destruct (Hs empty); intuition. intros x Hx. inversion Hx. assert (x == bottom).
+      apply weq_spec. split. apply (@bot_spec CPO_set PO_ex (CPO_ex EM)). apply H2. apply bot_inf.
+      apply decidable_ex in H0. now rewrite <- H0.
+    - inversion H. apply decidable_ex in H0. now rewrite H0 in H. apply decidable_ex in H0. now rewrite H0 in H.
+    - intros Y Hi Hs. apply Hi. replace x2 with (F bottom). apply from_image.
+        destruct (Hs empty); intuition. intros x Hx. inversion Hx. assert (x == bottom).
+        apply weq_spec. split. apply (@bot_spec CPO_set PO_ex (CPO_ex EM)). apply H2. apply bot_inf.
+        apply decidable_ex in H0. now rewrite <- H0.
+      now cbn.
+  Qed.
+ 
+  Lemma top_of_P0_is_not_minimal (EM : classic_axiom) : exists (a : CPO_set), is_greatest (P0_ex EM) a /\ ~ (is_least (Fix F) a).
+  Proof.
+  destruct (sup_existsL (CompleteLattice := (Lattice_ex EM)) (P0_ex EM)) as [a Ha].
+    exists a. split.
+    + split.
+      - inversion Ha. destruct H. apply decidable_ex in H0. now rewrite <- H0 in H.
+        destruct H. destruct H. destruct H0. apply decidable_ex in H1. now rewrite H1.
+        destruct H. destruct H0. apply decidable_ex in H1. rewrite H1. apply P0_is_P0'. now left.
+      - intros. eapply leq_xsupL. 2 : apply Ha. assumption.
+    + intro. destruct H. assert (a <= x1). apply (H0 x1). now cbn.
+      assert (x2 <= a). eapply leq_xsupL. 2 : apply Ha. apply P0_is_P0'. now right.
+      assert (x2 == a). split. apply H2. destruct a; constructor.
+      apply decidable_ex in H3. rewrite <- H3 in H1. inversion H1.
+  Qed.
+  
 End CounterExample.
-*)
+
+
