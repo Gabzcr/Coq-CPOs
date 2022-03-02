@@ -29,14 +29,15 @@ Il reste de nombreuses questions ouvertes dans le domaine des coalgèbres. En pa
 certains théorèmes de point fixe n'ont pas encore de contrepartie claire dans ce cadre.
 C'est le cas de certains résultats relativement avancés concernant les \emph{techniques up-to} pour la coinduction\cite{pous:lics16:cawu,pr19:lmcs:companion}, mais aussi de résultats de base comme le second théorème de point fixe de \cite[chapitre~8]{DaveyPriestley90}. 
 
-Concernant les assistants de preuves, et en particulier l'assistant de preuve Coq:
+Spécifiquement dans le cadre des assistants de preuves, et en particulier
+l'assistant de preuve Coq, deux problèmes majeurs existent :
 \begin{enumerate}
 \item Alors que des parties de la théorie des ordres partiels et des versions spécialisées des théorèmes de points fixes ont déjà été formalisées pour les besoins de projets spécifiques, il n'y a toujours pas à ce jour de librairie couvrant une fois pour toutes ces outils standard, de manière robuste et modulaire.
 \item Les outils proposés pour travailler avec des types coinductifs ne sont pas satisfaisants: d'une part, la notion native d'égalité n'est pas celle que l'on souhaite avoir sur les habitants de ces types, et d'autre part la définition de fonctions \emph{corécursives} repose sur une condition de garde ad-hoc pour garantir la correction du système, qui est source d'un bogue relativement sévère dans la théorie de Coq, et malgré tout très souvent contraignante pour le programmeur.
 \end{enumerate}
-Ces deux limitations sont problématiques notamment dans le domaine de la compilation certifiée, où l'on utilise souvent la théorie des domaines (et donc des points fixes) des connexions de Galois (idem), et où des types coinductifs apparaissent naturellement~\cite{compcert,itrees}.
+Ces deux limitations sont problématiques notamment dans le domaine de la compilation certifiée, où l'on utilise souvent la théorie des domaines (et donc des points fixes), des connexions de Galois (idem), et où des types coinductifs apparaissent naturellement~\cite{compcert,itrees}.
 
-Pour la seconde, il peut paraître étonnant que la dualité que l'on observe au niveau catégorique entre structures inductives et structures coinductives ne se retrouve pas en théorie des types: les types inductifs s'y comportent très bien et sont bien compris, mais pas les types coinductifs.
+Vis à vis de la seconde problématique, il peut paraître étonnant que la dualité que l'on observe au niveau catégorique entre structures inductives et structures coinductives ne se retrouve pas en théorie des types: les types inductifs s'y comportent très bien et sont bien compris, mais pas les types coinductifs.
 Cet aspect semble être spécifique à la théorie des types: en Isabelle/HOL, qui repose sur la logique  d'ordre supérieur (une logique classique), de très bons outils ont pu être développés pour les types inductifs et coinductifs, en s'appuyant sur la théorie catégorique sous-jacente~\cite{DBLP:conf/frocos/BiendarraBBDFHK17}.
 
 \section{Programme de recherche}
@@ -49,7 +50,14 @@ Un tel programme comporte des questions à la fois mathématiques et de dévelop
 \item Du côté développement logiciel se posent des questions de structuration: comment organiser les librairies développées de manière modulaire et réutilisable, comment partager le code et les preuves pour diverses variantes de certains résultats. 
 \end{itemize}
 
-Durant une première partie de la thèse, nous nous concentrerons sur la formalisation de la théorie des ordres partiels et des points fixes. En effet, cet objectif plus modeste contient déjà une partie des difficultés que l'on s'attend à rencontrer avec notre objectif principal (preuves à rendre constructives, modularité et partage du code dans la formalisation). Il nous permettra d'anticiper d'éventuelles difficultés avec notre objectif principal, et fournira un premier jalon déjà fort utile pour la communauté---cf. limitation 1/ dans la section précédente).
+Durant une première partie de la thèse, nous nous concentrerons sur la
+formalisation de la théorie des ordres partiels et des points fixes. En effet,
+cet objectif plus modeste contient déjà une partie des difficultés que l'on
+s'attend à rencontrer avec notre objectif principal (preuves à rendre
+constructives, modularité et partage du code dans la formalisation). Il nous
+permettra d'anticiper d'éventuelles difficultés avec notre objectif principal,
+et fournira un premier jalon déjà fort utile pour la communauté---addressant la
+première limitation décrite en section précédente.
 
 \section{Encadrement}
 
