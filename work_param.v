@@ -3,7 +3,7 @@ Require Import Psatz.
 Require Export Setoid Morphisms.
 Set Implicit Arguments.
 
-Class B_param (B : Type) := {
+Class B_param (B : Type) (X : Type) := {
   is_true : B -> Prop; (* need this to define everything *)
   BFalse : B; (* need this to define bottom in a CL *)
   BTrue : B; (* idem *)
@@ -15,10 +15,10 @@ Class B_param (B : Type) := {
   BOr_spec : forall b1 b2, is_true b1 \/ is_true b2 <-> is_true (BOr b1 b2);
   BImpl : B -> B -> B;
   BImpl_spec : forall b1 b2, (is_true b1 -> is_true b2) <-> (is_true (BImpl b1 b2));
-  BForall (A : Type) : (A -> B) -> B;
-  BForall_spec : forall (A : Type) (P : A -> B), (forall a, is_true (P a)) <-> is_true (BForall P);
-  BExists (A : Type) : (A -> B) -> B;
-  BExists_spec : forall (A : Type) (P : A -> B), (exists a, is_true (P a)) <-> is_true (BExists P);
+  BForall : (X -> B) -> B;
+  BForall_spec : forall (P : X -> B), (forall x, is_true (P x)) <-> is_true (BForall P);
+  BExists : (X -> B) -> B;
+  BExists_spec : forall (P : X -> B), (exists x, is_true (P x)) <-> is_true (BExists P);
   
   (*
   BForall_g (A:Type) : (A -> B) -> (A -> B) -> B; (*here I is to select only a subset of A according to some condition B
@@ -44,7 +44,7 @@ Class B_param (B : Type) := {
   B_impl_trans : forall x y z, is_true (B_impl x y) -> is_true (B_impl y z) -> is_true (B_impl x z);*)
   }.
 
-Class B_PO (X: Type) (B : Type) `(Bp : B_param B) := {
+Class B_PO (X: Type) (B : Type) (Bp : B_param B X) := {
     weq: X -> X -> B;
     leq: X -> X -> B;
     weq_in_prop x y := is_true (weq x y);
@@ -61,7 +61,7 @@ Definition leq_in_prop {X} {B} {Bp : B_param B} {L' : B_PO X Bp} (x y : X) := is
 *)
 
 (* Definition of Lattice as a particular (stronger) CPO. *)
-Class B_CL (X : Type) (*(B : Type) `(Bp : B_param B)*) `(L' : B_PO X) := {
+Class B_CL (X : Type) (B : Type) (Bp : B_param B X) `(L' : B_PO X) := {
     sup: (X -> B) -> X;
     (*sup_spec0 : forall Y y, is_true (Y y) -> is_true (leq y (sup Y));*)
     sup_spec: forall Y z, leq_in_prop (sup Y) z <-> (forall y, is_true (Y y) -> leq_in_prop y z);
@@ -104,7 +104,7 @@ End Partial_order.
 
 Section sup.
 
-  Context {X} {B} {Bp : B_param B} {P' : B_PO X Bp} {L : B_CL P'}.
+  Context {X} {B} {Bp : B_param B X} {P' : B_PO Bp} {L : B_CL Bp P'}.
 
   Lemma leq_xsup (Y: X -> B) y : is_true (Y y) -> y <= sup Y.
   Proof. intro H. now apply (sup_spec Y). Qed.
@@ -141,7 +141,7 @@ End sup.
 
 Section function.
 
-  Context {X} {B} {Bp : B_param B} {P' : B_PO X Bp}.
+  Context {X} {B} {Bp : B_param B X} {P' : B_PO Bp}. 
 
   Record mon := { body:> X -> X; Hbody: Proper (leq_in_prop ==> leq_in_prop) body }.
 
@@ -155,7 +155,7 @@ End function.
 (* Knaster-Tarski Theorem on Lattices *)
 
 Section lattice_results.
-  Context {X} {B} {Bp : B_param B} {P' : B_PO X Bp} {L : B_CL P'}.
+  Context {X} {B} {Bp : B_param B X} {P' : B_PO Bp} {L : B_CL Bp P'}.
   Variable b: mon.
 
   Definition gfp := sup (fun x => leq x (b x)).
@@ -199,7 +199,7 @@ Section Concrete_Examples.
 Require Import Bool.
 
 
-Program Instance Prop_B : B_param Prop:=
+Program Instance Prop_B (X: Type): B_param Prop X :=
   {|
     is_true P := P;
     BTrue := True;
@@ -207,11 +207,19 @@ Program Instance Prop_B : B_param Prop:=
     BAnd := and;
     BOr := or;
     BImpl P Q := P -> Q;
-    BForall A Pa := forall (a:A), Pa a;
-    BExists A Pa := exists (a:A), Pa a;
+    BForall Px := forall (x:X), Px x;
+    BExists Px := exists (x:X), Px x;
   |}.
+  
+  Check List.forallb.
 
-Program Instance Prop_B : B_param bool:=
+  Context {A : Type}.
+  Variable X : list A.
+  Hypothesis HList : forall (a : A), List.In a X.
+
+(* Bool on some X finite *)
+
+Program Instance bool_B : B_param bool A :=
   {|
     is_true := Is_true;
     BTrue := true;
@@ -219,28 +227,22 @@ Program Instance Prop_B : B_param bool:=
     BAnd := andb;
     BOr := orb;
     BImpl := implb;
-    BForall A Pa := forall (a:A), Pa a;
-    BExists A Pa := exists (a:A), Pa a;
+    BForall := fun P => List.forallb P X;
+    BExists := fun P => List.existsb P X;
   |}.
-
-
-Class B_param (B : Type) := {
-  is_true : B -> Prop; (* need this to define everything *)
-  BFalse : B; (* need this to define bottom in a CL *)
-  BTrue : B; (* idem *)
-  BFalse_spec : ~ (is_true BFalse);
-  BTrue_spec : is_true BTrue;
-  BAnd : B -> B -> B;
-  BOr : B -> B -> B;
-  BAnd_spec : forall b1 b2, is_true b1 /\ is_true b2 <-> is_true (BAnd b1 b2);
-  BOr_spec : forall b1 b2, is_true b1 \/ is_true b2 <-> is_true (BOr b1 b2);
-  BImpl : B -> B -> B;
-  BImpl_spec : forall b1 b2, (is_true b1 -> is_true b2) <-> (is_true (BImpl b1 b2));
-  BForall (A : Type) : (A -> B) -> B;
-  BForall_spec : forall (A : Type) (P : A -> B), (forall a, is_true (P a)) <-> is_true (BForall P);
-  BExists (A : Type) : (A -> B) -> B;
-  BExists_spec : forall (A : Type) (P : A -> B), (exists a, is_true (P a)) <-> is_true (BExists P);
-  
+  Next Obligation. destruct b1; destruct b2; intuition. Qed.
+  Next Obligation. destruct b1; destruct b2; intuition. Qed.
+  Next Obligation. destruct b1; destruct b2; intuition. Qed.
+  Next Obligation.
+    split; intro H. apply Is_true_eq_left. apply List.forallb_forall. 
+    intros x Hx. apply Is_true_eq_true. apply H.
+    intro x. apply Is_true_eq_left. apply Is_true_eq_true in H. rewrite List.forallb_forall in H.
+    apply H. apply HList. Qed.
+  Next Obligation.
+    split; intro H. destruct H as [x Hx]. apply Is_true_eq_left. apply List.existsb_exists.
+    exists x. split. apply HList. now apply Is_true_eq_true.
+    apply Is_true_eq_true in H. apply List.existsb_exists in H. destruct H as [x Hx]. exists x.
+    apply Is_true_eq_left. apply Hx. Qed.
 
 End Concrete_Examples.
 
