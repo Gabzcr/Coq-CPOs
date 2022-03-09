@@ -774,7 +774,7 @@ End Fixpoints.
 
 Section Bourbaki_Witt.
 
-  Context {X} `{P: CPO X}.
+  Context {X} `{P: CPO X} (*`{L : CompleteLattice X}*).
   Definition classic_axiom := forall (P : Prop), P \/ ~ P.
 
   (* Now show that P0 is a chain, to prove that it has a sup (top). This is a fixpoint. *)
@@ -865,26 +865,59 @@ fixpoints between bottom and our fix point is a chain. TODO ? *)
     apply sup_spec; cbn. intros. rewrite <- HF. now apply leq_xsup.
   Qed.
 
+
+
+(* Attempt at adapting proof from coinduction.v *)
+(*
+ Variable F: X -> X.
+ Hypothesis HF : Increasing F.
+
+Inductive S: X -> Prop :=
+ | S_bot : S bot
+ | S_succ : forall x, S x -> S (F x)
+ | S_sup : forall (D : directed_set leq), included D S -> S (sup D).
+
+
+ Lemma choose (Px A B: X -> Prop): (forall x, Px x -> A x \/ B x) -> (exists x, Px x /\ B x) \/ (forall x, Px x -> A x).
+ Proof.
+(*
+   intro H. classical_right. intros x Px.
+   destruct (H _ Px). assumption. exfalso; eauto. 
+ Qed.*)
+Admitted.
+
+Lemma directed_lemma s : S s -> Directed leq (fun t => S t /\ t <= s).
+Proof.
+  intros Hs x y [Hx HFx] [Hy HFy]. exists s. repeat split; intuition.
+Qed.
+
+Definition Sflat_set s (Hs : S s) := (exist (Directed leq) (fun t => S t /\ t <= s) (directed_lemma Hs)).
+
+Lemma Sflat s (Hs : S s): s == sup (exist _ (fun t => S t /\ t <= s) (directed_lemma Hs)).
+ Proof.
+   apply antisym. eapply sup_spec. reflexivity. cbn. split; intuition.
+   apply sup_spec; now cbn.
+ Qed.
+
+ Lemma S_linear x y: S x -> S y -> x <= y \/ y <= x.
+ Proof.
+   intro Sx. revert y. induction Sx as [|x0 Hx0 IH | x Hx IH]; intros y Sy.
+   - now left.
+   - pose proof (Sflat Sy) as E.
+     set (T t := S t /\ y <= F t) in E.
+     assert (IH': forall y, T y -> x0 <= y \/ y <= x0). intros t Tt. apply IH, Tt.
+     Check choose. 
+     destruct (choose _ _ _ IH') as [[s [Ss sx]]|F0].
+     right. rewrite E, <-sx. now apply leq_infx.
+     left. rewrite E. apply inf_spec; intros s Ts. now apply b, F.
+   - assert (IH': forall a, T a -> y <= a \/ a <= y). intros a A. specialize (IH _ A _ Sy). tauto. 
+     destruct (choose _ _ _ IH') as [[s [Ss sx]]|F].
+     left. rewrite <-sx. now apply leq_infx_id.
+     right. apply inf_spec; intros t Tt. now apply F. 
+ Qed.
+
+*)
+
+
 End Bourbaki_Witt.
 
-
-(*
-Section CounterExample.
-
- Variant CPO_set : Set := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
-
- Inductive leq3 : rel CPO_set :=
-  | reflexive: forall x, leq3 x x
-  | transitive: forall x y z, leq3 x y -> leq3 y z -> leq3 x z
-  | bot_x1: leq3 bottom x1
-  | x1_x2: leq3 x1 x2.
-
-
- Program Definition CPO_ex: CPO CPO_set :=
-  {| weq x y := leq_ex x y /\ leq_ex y x;
-     leq := leq_ex;
-     sup D := 
-  |}.
-
-End CounterExample.
-*)

@@ -443,7 +443,7 @@ Section Particular_CPOs.
     + split; intros d ix iy Hix Hiy. rewrite (H d ix iy); intuition. rewrite (H d iy ix); intuition.
     + destruct H as [Hinf1 Hinf2]. apply weq_spec. split. now apply (Hinf1 x0). now apply (Hinf2 x0).
   Qed.
-  
+
   
   Program Definition sup_mon (F : directed_set leq) (H : forall (x:X), Directed (@leq X P') (fun z => exists2 g, F g & g x z)) := 
   {| body_prop (x y : X) := @sup X P' P (fun (z:X) => exists2 g, F g & g x z) y |}.
@@ -561,6 +561,7 @@ Qed.
     destruct Ha. apply (H x). apply H0. apply H0.
   Qed.
 *)
+
 
   (** * sub-CPO : Define a set (part of X) as being a CPO *)
 
