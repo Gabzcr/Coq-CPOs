@@ -854,10 +854,10 @@ we can't just define our fixpoint as below :
 Program Definition top_P0 (F':X -> X) (H : Increasing F') := (sup (exist _ (P0 F') _)).
 Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
 
-  (*The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper)
+  (*The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper and in work_prop.v)
 However, from an existing fix point, it seems we can deduce a minimal fix point since the set of
-fixpoints between bottom and our fix point is a chain. TODO ? *)
-  Theorem Fixpoint_III (F' : X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x(*is_minimal (Fix F') x*).
+fixpoints between bottom and our fix point is a chain. *)
+  Theorem Fixpoint_III (F' : X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x (*is_minimal (Fix F') x*).
   Proof.
     intros EM Fp HF. exists (sup (exist _ (P0 F') (P0_is_directed EM Fp HF))).
     apply weq_spec. split. apply leq_xsup; cbn. apply P0_is_invariant_subCPO.
@@ -918,6 +918,52 @@ Lemma Sflat s (Hs : S s): s == sup (exist _ (fun t => S t /\ t <= s) (directed_l
 
 *)
 
-
 End Bourbaki_Witt.
+
+
+
+Section S_chain.
+
+ Context {X} `{P: CPO X}.
+
+ Inductive S F : X -> Prop :=
+  | S_bot : S F bot
+  | S_succ : forall x, S F x -> S F (F x)
+  | S_sup : forall (D : directed_set leq), included D (S F) -> (S F) (sup D).
+
+ Lemma S_is_P0 : forall F, @weq (set X) PO_parts (S F) (P0 F).
+ Proof.
+ intro F. apply antisym; cbn.
+ + intros x HSx. induction HSx. apply P0_is_invariant_subCPO. intros x Fal. contradiction.
+   apply P0_is_invariant_subCPO. now apply from_image.
+   apply P0_is_invariant_subCPO. intro x. apply H0.
+ + apply P0_is_smallest_invariant_subCPO. intros x HFx. inversion HFx. now apply S_succ.
+   intros D HD. now apply S_sup.
+Qed.
+
+(* Increasing version *)
+ Lemma Fixpoint_tool_inc F : is_Chain (S F) -> Increasing F -> exists x, Fix F x.
+ Proof.
+  intros HS HF . exists (sup (exist _ (S F) (chain_is_directed HS))). apply antisym.
+  + apply leq_xsup. cbn. apply S_succ. apply S_sup. cbn. now intro.
+  + apply HF.
+ Qed.
+
+
+(* monotonous version, that actually shows that F is Increasing on P0 via P0_is_in_Post*)
+ Variable F : mon.
+
+ Lemma Fixpoint_tool_mon : is_Chain (S F) -> exists x, Fix F x.
+ Proof.
+  intros HS. exists (sup (exist _ (S F) (chain_is_directed HS))). apply antisym.
+  + apply leq_xsup. cbn. apply S_succ. apply S_sup. cbn. now intro.
+  + apply P0_is_in_Post. apply S_is_P0. apply S_sup. now cbn.
+ Qed.
+ 
+ (* Note : it was proved that S ( = P0) is a chain when F is Increasing, using classical arguments. Cf Lemma P0_is_Chain.
+  It was also non-intuitionastically proved in coinduction.v for a monotonous function.
+  But it was not proved for a monotonous function without classical logic, since the intuitionistic proof does not use this.
+ *)
+
+End S_chain.
 

@@ -92,7 +92,6 @@ Class B_PO := {
     weq_spec: forall x y, weq_in_prop x y <-> leq_in_prop x y /\ leq_in_prop y x;
   }.
 
-
 (*
 Definition weq_in_prop {X} {B} {Bp : B_param B} {L' : B_PO X Bp} (x y : X) := is_true (B := B) (weq x y).
 Definition leq_in_prop {X} {B} {Bp : B_param B} {L' : B_PO X Bp} (x y : X) := is_true (B := B) (leq x y).
@@ -140,6 +139,14 @@ Infix "==" := weq_in_prop (at level 70): B_PO.
 Infix "<=" := leq_in_prop (at level 70): B_PO.
 #[global] Hint Extern 0 => reflexivity: core.
 
+
+
+Ltac fold_leq := match goal with
+  | |- context [is_true (leq ?x ?y)] => fold (leq_in_prop x y)
+end.
+Ltac fold_weq := match goal with
+  | |- context [is_true (weq ?x ?y)] => fold (weq_in_prop x y)
+end.
 
 
 Section Concrete_Examples.
@@ -383,9 +390,9 @@ Section function.
       rewrite <- Directed_spec in H.
       destruct (H x1 x2) as [x Hx]; try assumption.
       exists (F x). repeat split. apply BExists_spec. exists x. apply BAnd_spec. split.
-      apply Hx. fold (weq_in_prop (F x) (F x)). reflexivity. fold (weq_in_prop y1 (F x1)) in Hx1.
-      apply weq_spec in Hx1. destruct Hx1 as [Hx1 _]. fold (leq_in_prop y1 (F x)). transitivity (F x1).
-      apply Hx1. apply Hbody. apply Hx. fold (weq_in_prop y2 (F x2)) in Hx2. fold (leq_in_prop y2 (F x)).
+      apply Hx. fold_weq. reflexivity. fold_leq. fold (weq_in_prop y1 (F x1)) in Hx1.
+      apply weq_spec in Hx1. destruct Hx1 as [Hx1 _]. transitivity (F x1).
+      apply Hx1. apply Hbody. apply Hx. fold (weq_in_prop y2 (F x2)) in Hx2. fold_leq.
       transitivity (F x2). now apply weq_spec in Hx2. now apply Hbody.
     + exists DD. apply sup_spec; cbn. intros y Hy.
       apply BExists_spec in Hy. destruct Hy as [x Hx]. apply BAnd_spec in Hx. destruct Hx as [Dx Hx].
@@ -506,8 +513,8 @@ Section Particular_CPOs.
     |}.
   Next Obligation.
   apply Build_PreOrder.
-    + intro x. apply BForall_spec. intro. fold (leq_in_prop (x x0) (x x0)). reflexivity.
-    + intros f g h Hfg Hgh. apply BForall_spec. intro x. fold (leq_in_prop (f x) (h x)).
+    + intro x. apply BForall_spec. intro. fold_leq. reflexivity.
+    + intros f g h Hfg Hgh. apply BForall_spec. intro x. fold_leq.
       rewrite <- BForall_spec in Hfg, Hgh.
       transitivity (g x). apply Hfg. apply Hgh.
   Qed.
@@ -530,7 +537,7 @@ Section Particular_CPOs.
     destruct (D fx fy) as [f [Hf1S [Hff1 Hff2]]]; try assumption.
     exists (f x). unfold leq_in_prop in Hff1, Hff2. cbn in *. rewrite <- BForall_spec in Hff1, Hff2.
     repeat split. exists f. apply BAnd_spec. split. 
-    assumption. fold (weq_in_prop (f x) (f x)). reflexivity.
+    assumption. fold_weq. reflexivity.
                                  + fold (leq_in_prop x0 (f x)). transitivity (fx x).
                                    apply weq_spec in Eqfx. apply Eqfx. apply (Hff1 x).
                                  + fold (leq_in_prop y (f x)). transitivity (fy x).
@@ -543,14 +550,14 @@ Section Particular_CPOs.
     destruct H0 as [f [Hfx0 Eqyx]].
     transitivity (f y). rewrite Eqyx. now apply Hbody.
     apply leq_xsup. cbn. apply BExists_spec. exists f. apply BAnd_spec.
-    split. assumption. fold (weq_in_prop (f y) (f y)). reflexivity.
+    split. assumption. fold_weq. reflexivity.
   Qed.
   Next Obligation.
     destruct D as [SF D]; cbn in *. split.
     + intros H f Df. unfold leq_in_prop in *. cbn in *. rewrite <- BForall_spec in *. intro x.
-      fold (leq_in_prop (f x) (z x)). rewrite <- H.
+      fold_leq. rewrite <- H.
       eapply sup_spec. reflexivity. cbn. apply BExists_spec. exists f. apply BAnd_spec. split. assumption.
-      now fold (weq_in_prop (f x) (f x)).
+      now fold_weq.
     + intro H. unfold leq_in_prop. cbn. apply BForall_spec. intro x. apply sup_spec. cbn. intros y Hy.
       rewrite <- BExists_spec in Hy. destruct Hy as [f Hf]. apply BAnd_spec in Hf. destruct Hf as [Hf Eqyfx].
       rewrite Eqyfx. unfold leq_in_prop in H. cbn in H. setoid_rewrite <- BForall_spec in H. now apply (H f).
@@ -592,7 +599,7 @@ Section Particular_CPOs.
     {|
       Sup A := (fun x => BExists_set (fun Y => BAnd (A Y) (Y x)));
     |}.
-  Next Obligation.
++++++++++++  Next Obligation.
    unfold leq_in_prop; cbn. split; intros. 
     + unfold included. rewrite <- BForall_spec. intro x. apply BImpl_spec. intro Hx.
       setoid_rewrite <- BForall_spec in H. setoid_rewrite <- BImpl_spec in H. 
@@ -624,7 +631,7 @@ Section Particular_CPOs.
 
 
 (* Doesn't work : requires dependent pair in B :'( *)
-(*
+
   Definition set_type (Y : X -> B) : Type := { x : X | is_true (Y x)}.
   Definition element Y (y :set_type Y) := proj1_sig y.
   #[global] Coercion element : set_type >-> X.
@@ -661,7 +668,7 @@ Section Particular_CPOs.
       now exists y.
       + intros. apply sup_spec. cbn. intros. destruct H1. now apply (H0 (exist (fun x : X => Y x) y x)).
   Qed.
-*)
+
 
   (* Some instances that can now be defined on CPO_parts and CPO_mon. *)
 
@@ -687,63 +694,6 @@ Section Particular_CPOs.
   Qed.
 
 End Particular_CPOs.
-
-
-
-(** * Common fixpoint of every monotonous increasing function *)
-
-Section Increasing_fixpoint.
-  Context {X} {B} {Bp : B_param B} {Bpp : B_param_plus X Bp} {P' : B_PO (X := X)} {P : B_CPO P'}.
-  Context  {Bpp_mon : B_param_plus mon Bp}.
-
-  Definition Increasing F := (@BForall B X Bp Bpp (fun x => leq x (F x))).
-
-  Definition leq_mon f g := (@leq mon B Bp B_PO_mon f g).
-  Definition weq_mon f g := (@weq mon B Bp B_PO_mon f g).
-
-  Program Definition Increasing_functions := exist (Directed_in_prop (Bp := Bp) leq_mon) Increasing _.
-  Next Obligation.
-    apply Directed_spec. intros f g Hf Hg. exists (comp f g). setoid_rewrite <- BForall_spec in Hf. setoid_rewrite <- BForall_spec in Hg.
-    repeat split. apply BForall_spec.
-    + intro x. fold (leq_in_prop x (((f ° g) x))). transitivity (g x). apply Hg. apply Hf.
-    + cbn. apply BForall_spec. intro x. apply Hbody. apply Hg.
-    + cbn. apply BForall_spec. intro x. cbn. apply Hf.
-  Defined.
-
-  Definition H_sup := (sup (B_CPO := B_CPO_mon) Increasing_functions).
-
-  Lemma H_sup_is_increasing : is_true (Increasing H_sup).
-  Proof. apply BForall_spec. intro. assert (is_true (leq_mon id H_sup)).
-   apply (sup_spec (B_CPO := B_CPO_mon) Increasing_functions). reflexivity.
-   unfold Increasing_functions. cbn. apply BForall_spec. intro.
-   fold (leq_in_prop x0 x0). reflexivity.
-   cbn in H. rewrite <- BForall_spec in H. apply H. 
-  Qed.
-
-  Lemma H_sup_bot_is_fixpoint_of_all_Increasing (F:mon) :
-    is_true (Increasing F) -> is_true (Fix F (H_sup bot)).
-  Proof.
-    intro. setoid_rewrite <- BForall_spec in H. assert (is_true (weq_mon (comp F H_sup) H_sup)).
-    + apply weq_spec. split. apply (sup_spec (B_CPO := B_CPO_mon) Increasing_functions). reflexivity.
-      unfold Increasing_functions. cbn. apply BForall_spec. intro x. fold (leq_in_prop x
-     (F
-        (sup
-           (exist (fun Dbody0 : X -> B => Directed_in_prop leq Dbody0)
-              (fun y : X => BExists (fun f : mon => BAnd (Increasing f) (weq y (f x))))
-              (B_CPO_mon_obligation_1 Increasing_functions x))))). transitivity (H_sup x). 
-      transitivity (H_sup x). pose proof H_sup_is_increasing.
-      setoid_rewrite <- BForall_spec in H0. apply H0. reflexivity. cbn.
-      apply H. unfold leq_in_prop. cbn. apply BForall_spec. intro x. apply H.
-    + unfold Fix. cbn in H0. rewrite <- BForall_spec in H0. apply H0.
-  Qed.
-
-  (* Lemma 8.21*)
-  Lemma increasing_has_fix_point (F:mon) : is_true (Increasing F) -> exists x, is_true (Fix F x).
-  Proof.
-    intro. exists (H_sup bot). now apply H_sup_bot_is_fixpoint_of_all_Increasing.
-  Qed.
-
-End Increasing_fixpoint.
 
 
 (** * Invariant subCPOs *)
@@ -772,7 +722,7 @@ Section Invariant_subCPOs.
       apply fun_ext with (F x0). apply H. rewrite <- P0_spec. intros Y Hi Hs. destruct H. rewrite <- P0_spec in H.
       unfold Invariant in Hi. rewrite included_spec in Hi. apply Hi. apply BExists_spec. exists x0.
       apply BAnd_spec. split. apply H. apply included_spec. apply Hi. apply Hs.
-      fold (weq_in_prop (F x0) (F x0)). reflexivity.
+      now fold_weq.
     + apply is_subCPO_spec. intros D H. rewrite <- P0_spec. intros Y Hi Hs. rewrite <- is_subCPO_spec in Hs. apply Hs.
       rewrite included_spec. rewrite included_spec in H. intros x Hx. specialize H with x. 
       apply H in Hx. rewrite <- P0_spec in Hx. apply Hx. apply Hi. apply is_subCPO_spec. apply Hs.
@@ -785,6 +735,71 @@ End Invariant_subCPOs.
 
 
 
+(** * Common fixpoint of every monotonous increasing function *)
+
+Section Increasing_fixpoint.
+  Context {X} {B} {Bp : B_param B} {Bpp : B_param_plus X Bp} {P' : B_PO (X := X)} {P : B_CPO P'}.
+  Context  {Bpp_mon : B_param_plus mon Bp}.
+
+  Definition Increasing F := @BForall B X Bp Bpp (fun x => leq x (F x)).
+  Definition Increasing_restricted Y F := BAnd (Invariant F Y) (@BForall B X Bp Bpp (fun x => BImpl (Y x) (leq x (F x)))).
+  (* Note : this definition might cause some problems when Y is not F-Invariant, 
+     but it is simpler to define it that way *)
+
+  Definition leq_mon f g := (@leq mon B Bp B_PO_mon f g).
+  Definition weq_mon f g := (@weq mon B Bp B_PO_mon f g).
+
+  Program Definition Increasing_functions := exist (Directed_in_prop (Bp := Bp) leq_mon) (Increasing) _.
+  Next Obligation.
+    apply Directed_spec. unfold_spec. intros f g Hf Hg. exists (comp f g). (*destruct Hg as [Invg Subg]. destruct Hf as [Invf Subf].*)
+    (*setoid_rewrite <- BForall_spec in Hf. setoid_rewrite <- BForall_spec in Hg.*)
+    repeat split. (*apply BForall_spec.*)
+    (*+ intros x HYfgx. destruct HYfgx as [x0 [Yx0 fgx]].
+      apply Invf. exists (g x0). split; try assumption.
+      apply Invg. exists x0. split; try assumption. fold (weq_in_prop (g x0) (g x0)). reflexivity.*)
+    + intros x. fold_leq. transitivity (g x). apply Hg. apply Hf. (*now apply Subg. apply Subf.
+      apply Invg. exists x. split; try assumption. fold (weq_in_prop (g x) (g x)). reflexivity.*)
+    + cbn. apply BForall_spec. intro x. apply Hbody. apply Hg.
+    + cbn. apply BForall_spec. intro x. cbn. apply Hf.
+  Defined.
+
+  Definition H_sup := (sup (B_CPO := B_CPO_mon) Increasing_functions).
+
+  Lemma H_sup_is_increasing : is_true (Increasing H_sup).
+  Proof. apply BForall_spec. intro. assert (is_true (leq_mon id H_sup)).
+   apply (sup_spec (B_CPO := B_CPO_mon) Increasing_functions). reflexivity.
+   unfold Increasing_functions. cbn. apply BForall_spec. intro.
+   now fold_leq.
+   cbn in H. rewrite <- BForall_spec in H. apply H. 
+  Qed.
+
+  Lemma H_sup_bot_is_fixpoint_of_all_Increasing (F:mon) :
+    is_true (Increasing F) -> is_true (Fix F (H_sup bot)).
+  Proof.
+    intro. setoid_rewrite <- BForall_spec in H. assert (is_true (weq_mon (comp F H_sup) H_sup)).
+    + apply weq_spec. split. apply (sup_spec (B_CPO := B_CPO_mon) Increasing_functions). reflexivity.
+      unfold Increasing_functions. cbn. apply BForall_spec. intro x. fold_leq. transitivity (H_sup x). 
+      transitivity (H_sup x). pose proof H_sup_is_increasing.
+      setoid_rewrite <- BForall_spec in H0. apply H0. reflexivity. cbn.
+      apply H. unfold leq_in_prop. cbn. apply BForall_spec. intro x. apply H.
+    + unfold Fix. cbn in H0. rewrite <- BForall_spec in H0. apply H0.
+  Qed.
+
+  (* Lemma 8.21*)
+  Lemma increasing_has_fix_point (F:mon) : is_true (Increasing F) -> exists x, is_true (Fix F x).
+  Proof.
+    intro. exists (H_sup bot). now apply H_sup_bot_is_fixpoint_of_all_Increasing.
+  Qed.
+  
+  (*
+  Lemma restricted_increasing_has_fix_point (F:mon) Y : is_true (Increasing_restricted Y F) 
+    -> exists x, is_true (Fix F x).
+  Proof.
+    intro. exists (H_sup bot). apply H_sup_bot_is_fixpoint_of_all_Increasing.
+
+Faux, il faut vraiment se restreindre à Y *)
+
+End Increasing_fixpoint.
 
 
 
@@ -829,7 +844,7 @@ Section Fixpoints.
     + split.
     - apply BForall_spec. setoid_rewrite <- BImpl_spec. intros x H.
       setoid_rewrite <- BExists_spec in H. setoid_rewrite <- BAnd_spec in H. destruct H as [x0 [Px0 Fx]].
-      unfold Post. fold (leq_in_prop x (F x)). rewrite Fx. apply Hbody. apply Px0.
+      unfold Post. fold_leq. rewrite Fx. apply Hbody. apply Px0.
     - apply is_subCPO_spec. setoid_rewrite included_spec. intros D H. apply sup_spec. intros.
       transitivity (F y). now apply H. apply Hbody. now apply leq_xsup.
       + now apply P0_is_smallest_invariant_subCPO.
@@ -841,13 +856,14 @@ Section Fixpoints.
     intro. assert (is_true (Invariant F (down x)) /\ is_true (is_subCPO (down x))).
     + split.
     - unfold_spec. (*apply BForall_spec. setoid_rewrite <- BImpl_spec. setoid_rewrite <- BExists_spec.*)
-      intros y Hy. destruct Hy as [x0 [Dx0 Fyx0]]. unfold down. fold (leq_in_prop y x). unfold Fix in H.
+      intros y Hy. destruct Hy as [x0 [Dx0 Fyx0]]. unfold down. fold_leq. unfold Fix in H.
       rewrite <- H. rewrite Fyx0. apply Hbody. apply Dx0.
     - apply down_is_subCPO.
       + now apply P0_is_smallest_invariant_subCPO.
   Qed.
 
-(* Need to change this so that I don't need dependent pair. Go back to Invariant and define it on a subset. *)
+(* Need to change this so that I don't need dependent pair. Go back to Increasing and define it on a subset. *)
+(*
   Program Instance P0_PO : B_PO (set_type (P0 F)) := (subPO _).
   Program Instance P0_CPO : CPO P0_PO := (subCPO _).
   Next Obligation. apply P0_is_invariant_subCPO. Qed.
@@ -856,6 +872,7 @@ Section Fixpoints.
     {| body := fun y => (exist _ (F y) _) |}.
   Next Obligation. destruct y as [x Hx]; cbn. apply P0_is_invariant_subCPO. now apply from_image. Qed.
   Next Obligation. intros y1 y2 H12; cbn. now apply Hbody. Qed.
+*)
 
   Lemma F_restricted_is_increasing : Increasing F_restricted_to_P0.
   Proof. intro y. destruct y as [x Hx]; cbn. now apply P0_is_in_Post. Qed.
