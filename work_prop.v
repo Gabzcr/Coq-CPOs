@@ -1096,6 +1096,32 @@ End Bourbaki_Witt.
 
 
 
+Section S_chain.
+
+ Context {X} `{P: CPO X}.
+
+ Inductive S F : X -> Prop :=
+  | S_bot : forall x, is_bot x -> S F x
+  | S_succ : forall x, S F x -> S F (F x)
+  | S_sup : forall (D : directed_set leq) x, included D (S F) -> sup D x -> (S F) x.
+
+ Lemma S_is_P0 (c : correct_set) : forall F, @weq (set X) PO_parts (S F) (P0 F).
+ Proof.
+ intro F. pose proof (P0_is_invariant_subCPO F c) as [Hi Hs]. apply antisym; cbn.
+ + intros x HSx. induction HSx. 
+   destruct (Hs empty). now intro. apply c with x0; intuition. now apply sup_unicity with empty.
+   apply Hi. now apply from_image. destruct (Hs D). intro. apply H0. apply c with x0.
+   now apply sup_unicity with D. apply H2.
+ + apply P0_is_smallest_invariant_subCPO. intros x HFx. inversion HFx. now apply S_succ.
+   intros D HD. destruct sup_exists with D. exists x. split. now apply S_sup with D. assumption.
+Qed.
+
+End S_chain.
+
+
+
+
+
 Section CounterExample.
 
  Variant CPO_set : Set := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
@@ -1238,7 +1264,34 @@ Program Instance PO_ex : PO CPO_set:=
       assert (x2 == a). split. apply H2. destruct a; constructor.
       apply decidable_ex in H3. rewrite <- H3 in H1. inversion H1.
   Qed.
-  
+
+
+
+(*  Counter example to the fact that S is a chain is enough to conclude : same CPO *)
+
+Program Definition F' : CPO_set -> CPO_set := fun x => match x with
+      | bottom => x2
+      | x1 => x2
+      | x2 => x1
+    end.
+ 
+ Lemma Proper_F' : Proper (weq ==> weq) F'.
+ Proof. intros x y Hxy. apply decidable_ex in Hxy. now rewrite Hxy. Qed.
+
+ Definition P0_ex' (EM : classic_axiom) := (@P0 CPO_set PO_ex (CPO_ex EM) F').
+
+Lemma S_chain (EM : classic_axiom) : is_Chain (S (P := (CPO_ex EM)) F').
+Proof.
+  intros x y HSx HSy. destruct x. left. apply bot_inf. destruct y. right. apply bot_inf.
+  left. apply reflexivity. left. constructor. destruct y. right. apply bot_inf.
+  right. constructor. left. reflexivity.
+Qed.
+
+Lemma no_fixpoint' : ~ (exists x, Fix F' x).
+Proof.
+  intro H. destruct H. destruct x; apply decidable_ex in H; cbn in H; inversion H.
+Qed.
+
 End CounterExample.
 
 
