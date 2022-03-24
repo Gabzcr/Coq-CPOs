@@ -975,56 +975,89 @@ Section thm_no_subCPO.
  Context {X} `{P: CPO X}.
 
 (* Adapt proof of theorem 2 with no use for dependent pair for subCPO or monotonous function *)
- Definition mon_fun_applied (Y : set X) (z : X) (x0 : X) := exists (h : X -> X), x0 = h z 
+ Definition mon_fun_applied (Y : set X) (z : X) (* z = bot *) (x0 : X) := exists (h : X -> X), x0 = h z
                                               /\ (forall x y, Y x -> Y y -> leq x y -> leq (h x) (h y)) (* h monotonous *)
                                               /\ (forall x, Y x -> leq x (h x)) (* h increasing *)
-                                              /\ forall x, Y x -> Y (h x). (* h well defined on Y *)
+                                              /\ (forall x, Y x -> Y (h x))  (* h well defined on Y *)
+                                              /\ Y z. (* put the set to empty if we are looking at an element that is actually not in Y *)
 
 (* Now to prove that top_on_set is directed to take its sup which is a sup of P2 by Thm II *)
 
- Lemma directed_set_of_fun (Y : set X) (z : X) : Y z -> (is_subCPO Y) -> Directed leq (mon_fun_applied Y z).
+ Lemma directed_set_of_fun (Y : set X) (z : X) : (*Y z ->*) (*(is_subCPO Y) ->*) Directed leq (mon_fun_applied Y z).
 (* Proof idea : take composition *)
  Proof.
-  intros HYz Hs x y Hx Hy. destruct Hx as [hx [Hhx [hxmon [hxinc hxinv]]]]. destruct Hy as [hy [Hhy [hymon [hyinc hyinv]]]].
-  exists (hx (hy z)). repeat split. exists (fun x => hx (hy x)). repeat split.
+  intros (*HYz*) (*Hs*) x y Hx Hy. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
+  destruct Hy as [hy [Hhy [hymon [hyinc [hyinv HYy]]]]].
+  (*destruct Hx as [hx Hx]. destruct Hy as [hy Hy].*)
+  exists (hx (hy z)). repeat split. exists (fun x => hx (hy x)).
+  + (*intro HYz.*) (*destruct Hx as [Hhx [hxmon [hxinc [hxinv HYx]]]].*)(*assumption.*)
+  (*destruct Hy as [Hhy [hymon [hyinc [hyinv HYy]]]].*) (*assumption.*) repeat split.
   intros x0 y0 Hx0 Hy0 Hxy0. apply hxmon; try now apply hyinv. now apply hymon.
   intros x0 Hx0. transitivity (hy x0). now apply hyinc. apply hxinc. now apply hyinv.
-  intros x0 Hx0. apply hxinv. now apply hyinv. rewrite Hhx. apply hxmon. assumption. now apply hyinv. now apply hyinc.
-  transitivity (hy z). now rewrite Hhy. apply hxinc. now apply hyinv.
+  intros x0 Hx0. apply hxinv. now apply hyinv. assumption.
+  + transitivity (hx z). now rewrite <- Hhx. apply hxmon. assumption. now apply hyinv. now apply hyinc.
+  + rewrite <- Hhy. apply hxinc. rewrite Hhy. now apply hyinv.
+  
+  (*
+  destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
+  destruct Hy as [hy [Hhy [hymon [hyinc [hyinv HYy]]]]].
+  exists (hx (hy z)). repeat split. exists (fun x => hx (hy x)).
+  + repeat split.
+  intros x0 y0 Hx0 Hy0 Hxy0. apply hxmon; try now apply hyinv. now apply hymon.
+  intros x0 Hx0. transitivity (hy x0). now apply hyinc. apply hxinc. now apply hyinv.
+  intros x0 Hx0. apply hxinv. now apply hyinv. rewrite <- Hhy. now apply hxinv.
+  + transitivity (hx z). now rewrite <- Hhx. apply hxmon. assumption. now rewrite <- Hhy. apply hyinc. assumption.
+  + rewrite <- Hhy. now apply hxinc.*)
  Qed.
+ (*I'm actually surprised that we don't need Y to be a subCPO here...*)
 
- Program Definition fun_on_Y_subCPO Y z (H : is_subCPO Y) (Hz : Y z) := exist (Directed leq) (mon_fun_applied Y z) _.
- Next Obligation. apply directed_set_of_fun. assumption. assumption. Defined.
+ Program Definition fun_on_Y_subCPO (Y:set X) z (*(H : is_subCPO Y)*) (*(Hz : Y z)*) := exist (Directed leq) (mon_fun_applied Y z) _.
+ Next Obligation. apply directed_set_of_fun. Defined.
  
- 
+ (*
  Lemma subCPO_contains_bot Y : is_subCPO Y -> Y bot.
  Proof. intro H. now apply H. Qed.
+ *)
  
- 
- Lemma set_of_fun_is_subCPO Y (H : is_subCPO Y) : mon_fun_applied Y bot (sup (fun_on_Y_subCPO bot H (subCPO_contains_bot H))).
- Proof.
-  exists (fun x => sup (fun_on_Y_subCPO x H)).
-  
-  (sup (fun_bot_on_Y_subCPO H))). repeat split. reflexivity.
-  intros x Hx. Abort.
+ Lemma set_of_fun_is_subCPO Y (*(H : is_subCPO Y) *): is_subCPO Y ->
+   mon_fun_applied Y bot (sup (fun_on_Y_subCPO Y bot (*H*) (*(subCPO_contains_bot H)*))).
+ Proof. intro H.
+  exists (fun x => sup (fun_on_Y_subCPO Y x)). repeat split.
+  + intros x y HYx HYy Hxy. apply sup_spec. intros z Hz. destruct Hz as [hz [Hhz [hzmon [hzinc [hzinv HYz]]]]].
+    transitivity (hz y). rewrite Hhz. apply hzmon; assumption. apply leq_xsup. now exists hz.
+  + intros x HYx. apply leq_xsup. now exists id.
+  + intros x HYx. apply H. intros z Hz. destruct Hz as [hz [Hhz [hzmon [hzinc [hzinv HYz]]]]].
+  rewrite Hhz. now apply hzinv.
+  + now apply H.
+ Qed.
 
  Variable F : mon.
 
- Program Definition fun_bot_on_P0 := exist (Directed leq) (set_of_fun (P0 F)) _.
- Next Obligation. apply directed_set_of_fun. apply P0_is_invariant_subCPO. Defined.
+(*
+ Program Definition fun_bot_on_P0 := exist (Directed leq) (mon_fun_applied (P0 F) bot) _.
+ Next Obligation. apply directed_set_of_fun. Defined.
+*)
 
  Theorem Fixpoint_II_no_subCPO : exists x, Fix F x.
  Proof.
- exists (sup fun_bot_on_P0).
- assert ((P0 F) (sup fun_bot_on_P0)). apply P0_is_invariant_subCPO. 
- intros x Hx. destruct Hx as [hx [Hhx [hxmon [hxinc hxinv]]]].
+ exists (sup (fun_on_Y_subCPO (P0 F) bot)).
+ assert ((P0 F) (sup (fun_on_Y_subCPO (P0 F) bot))). apply P0_is_invariant_subCPO. 
+ intros x Hx. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
  rewrite Hhx. apply hxinv. now apply P0_is_invariant_subCPO.
  
- (*Montrer que set_of_fun P0 est un sous-CPO pour dire que son sup est dedans et prendre la fonction qui donne son sup ?*)
+ apply antisym.
  
- 
- 
- 
+ + assert (is_subCPO (P0 F)) as Hs. apply P0_is_invariant_subCPO.
+ pose proof (set_of_fun_is_subCPO Hs) as HP. destruct HP as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
+ rewrite Hhx at 1. apply leq_xsup. exists (fun x => F (hx x)). repeat split. 
+  - intros x y Hx Hy Hxy. apply Hbody. now apply hxmon.
+  - intros x Hx. transitivity (hx x). now apply hxinc. apply P0_is_in_Post. now apply hxinv.
+  - intros x Hx. apply P0_is_invariant_subCPO. apply from_image. now apply hxinv.
+  - assumption. 
+ + now apply P0_is_in_Post.
+ Qed.
+
+ (*
  apply antisym.
  + apply leq_xsup. exists (fun x => F (sup fun_bot_on_P0)). repeat split.
   reflexivity. intros x Hx. transitivity (sup fun_bot_on_P0). (*apply leq_xsup.
@@ -1037,7 +1070,7 @@ Section thm_no_subCPO.
   intros x Hx. apply P0_is_invariant_subCPO. now apply from_image.
  + now apply P0_is_in_Post.
  Admitted.
-
+*)
 
 End thm_no_subCPO.
 
