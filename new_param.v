@@ -5,10 +5,11 @@ Set Implicit Arguments.
 
 Section B.
 
+Search sigT.
 (*Definition type_valide K := { TBody : Type | K TBody}.*)
 
 Class B_param := { B : Type;
-  K : Type -> Prop;
+  K : Type -> Type;
   
   (* Basic operations on B *)
   is_true : B -> Prop; (* need this to define everything *)
@@ -30,8 +31,8 @@ Class B_param := { B : Type;
   set_closure (A : Type) : K A -> K (A -> B);
 
   (* Forall and Exists :*)
-  valid_type := { TBody : Type | K TBody};
-  TBody (V : valid_type) := proj1_sig V;
+  valid_type := { TBody : Type & K TBody};
+  TBody (V : valid_type) := projT1 V;
   
   BForall (V : valid_type) : (((TBody V) -> B) -> B);
   BForall_spec (V : valid_type) : forall (P : (TBody V) -> B), 
@@ -146,15 +147,15 @@ Section Forall_sets.
  Context {B : B_param} {X : valid_type} {P' : @B_PO B X}.
   
   #[global]
-  Program Definition valid_fun_type := exist K (X -> X) _.
+  Program Definition valid_fun_type := existT K (X -> X) _.
   Next Obligation. destruct X as [T KT]; cbn. now apply function_closure. Qed.
   
   #[global]
-  Program Definition valid_set_type := exist K (X -> B) _.
+  Program Definition valid_set_type := existT K (X -> B) _.
   Next Obligation. destruct X as [T KT]; cbn. now apply set_closure. Qed.
  
  #[global]
-  Program Definition valid_dir_set_type := exist K (directed_set leq) _.
+  Program Definition valid_dir_set_type := existT K (directed_set leq) _.
   Next Obligation. destruct X as [T KT]; cbn. apply subtype_closure. cbn.
   now apply set_closure. Qed.
 
@@ -164,54 +165,137 @@ End Forall_sets.
 
 
 Section Concrete_Examples.
-(*
+
 Require Import Bool.
 
-Program Instance Prop_B (X: Type): B_param Prop X :=
+  (* Note:
+  For a boolean, we want to work on finite types only. Thus we will have :
+  Definition K T : exists (l : list T), forall (x : T), In x l.
+  *)
+  
+
+  
+  (*Context (B : B_param).*)
+
+Program Instance Prop_B : B_param :=
   {|
+    B := Prop;
+    K A := True;
     is_true P := P;
     BTrue := True;
     BFalse := False;
     BAnd := and;
     BOr := or;
     BImpl P Q := P -> Q;
-    BForall Px := forall (x:X), Px x;
-    BExists Px := exists (x:X), Px x;
+    BForall V Pv := forall v, Pv v;
+    BExists V Pv := exists v, Pv v;
   |}.
   
-  Check List.forallb.
-
-  Context {A : Type}.
-  Variable X : list A.
-  Hypothesis HList : forall (a : A), List.In a X.
-
-(* Bool on some X finite *)
-
-Program Instance bool_B : B_param bool A :=
+  (*
+ Axiom constructive_indefinite_description :
+  forall (A : Type) (P : A->Prop),
+    (exists x, P x) -> { x : A | P x }.
+  *)
+  
+  Import Coq.Lists.List.  Print nth.
+  
+  (*
+  Lemma eq_is_decidable A (l : list A) (H : forall x, List.In x l) : forall (x y : A) , x = y \/ x <> y.
+  Proof. intros x y. pose proof (H x). specialize H with y.
+  induction l. contradict H. apply in_inv in H, H0. 
+  destruct H. destruct H0. left. rewrite <- H. now rewrite <- H0.
+  *)
+  
+  
+  (*
+  Fixpoint enumerate A (l : list A) (a : A) : nat :=
+    match l with
+      | nil => 0
+      | a :: tl => 1
+      | b :: tl => 1 + (enumerate A tl a)
+    end.
+  *)
+  
+  (*Search "list".*)
+  
+  (*
+ Fixpoint build_set A (l : list A) (H : forall x, List.In x l) (n : nat) : (A -> B) := 
+  match n with
+    | 0 => 
+  
+ Fixpoint set_list A (l : list A) : list (A -> bool) := 
+  match l with 
+    | nil => nil
+    | a :: tl => (fun x => a) :: (set_list tl)
+  end.
+  *)
+  (* BROUILLON
+  
+  Définir les types finis dans un fichier à part comme ci-dessous
+  
+  Record fin X := {|
+    eq_dec : forall a b, {a = b} + {a <> b};
+    el : list A;
+    all_ell : forall a, List.In a el
+    |}.
+  K = fin
+  
+  
+  
+  
+  
+  
+  
+  
+  "list.filter" pour sélectionner selon une propriété --> autre chose
+  
+  match P a as b return P a = b -> (list {a | P a}) with
+  | true => lambda H. [(a, H)]
+  | false => lambda _ .[]
+  end eq_refl.
+  
+  Rmq : proof irrelevance est vrai sur les booléens ! -> chercher le lemme associé !
+  
+  
+  
+  
+  let rec f = function 
+    | [] -> [lambda _ .false]
+    | a::q -> let r = f q in List.map (lambda h b -> if a = b then false else h b) r ++ List.map (... true) r
+    *)
+  
+  
+ Program Instance Bool_B : B_param :=
   {|
+    B := bool;
+    K T := {l : list T | forall  (x : T), List.In x l};
     is_true := Is_true;
     BTrue := true;
     BFalse := false;
     BAnd := andb;
     BOr := orb;
     BImpl := implb;
-    BForall := fun P => List.forallb P X;
-    BExists := fun P => List.existsb P X;
-  |}.
+    BForall V := fun P => List.forallb P (proj1_sig (projT2 V));
+    BExists V := fun P => List.existsb P (proj1_sig (projT2 V));
+  |}. (* Pb : NO IDEA how to prove these three below :'( --> should build list that contains all possible element : how ??? *)
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
+  Next Obligation. Admitted. (* This one is hard. How to build a type that is a sublist of another, by filtering along a property ? *)
+  Next Obligation. Admitted. (* prove that the set of functions is finite if X is finite *)
+  Next Obligation. Admitted. (* prove that the set of X -> bool is finite if X is finite *)
   Next Obligation.
-    split; intro H. apply Is_true_eq_left. apply List.forallb_forall. 
-    intros x Hx. apply Is_true_eq_true. apply H.
-    intro x. apply Is_true_eq_left. apply Is_true_eq_true in H. rewrite List.forallb_forall in H.
-    apply H. apply HList. Qed.
+    split; intro Q. apply Is_true_eq_left. apply List.forallb_forall. 
+    intros x Hx. apply Is_true_eq_true. apply Q.
+    intro x. apply Is_true_eq_left. apply Is_true_eq_true in Q. rewrite List.forallb_forall in Q.
+    apply Q. destruct constructive_indefinite_description. cbn. apply i.
+  Qed.
   Next Obligation.
-    split; intro H. destruct H as [x Hx]. apply Is_true_eq_left. apply List.existsb_exists.
-    exists x. split. apply HList. now apply Is_true_eq_true.
-    apply Is_true_eq_true in H. apply List.existsb_exists in H. destruct H as [x Hx]. exists x.
+    split; intro Q. destruct Q as [x Hx]. apply Is_true_eq_left. apply List.existsb_exists.
+    exists x. split. destruct constructive_indefinite_description. cbn. apply i. now apply Is_true_eq_true.
+    apply Is_true_eq_true in Q. apply List.existsb_exists in Q. destruct Q as [x Hx]. exists x.
     apply Is_true_eq_left. apply Hx. Qed.
-*)
+
 End Concrete_Examples.
 
 
