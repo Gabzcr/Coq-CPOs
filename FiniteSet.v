@@ -174,6 +174,12 @@ Fixpoint build_fun_opt A B (A_eq_dec : forall (a b : A), {a = b} + {a <> b})
                   add_last_image A_eq_dec B_eq_dec lB r a
         end.
 
+Definition retrieve_option C D default (h : C -> option D) x := match (h x) with
+                | None => default (* This case doesn't happen, just need the type to be correct *)
+                | Some d0 => d0
+                end.
+
+(*
 Program Definition build_fun C D (Cfin : fin C) (Dfin : fin D)
                        : list (C -> D)
   := match (el Dfin) with
@@ -185,8 +191,21 @@ Program Definition build_fun C D (Cfin : fin C) (Dfin : fin D)
                 | None => d (* This case doesn't happen, just need the type to be correct *)
                 | Some d0 => d0
                 end) (build_fun_opt (eq_dec Cfin) (eq_dec Dfin) (el Cfin) (el Dfin))
-    end.
+    end.*)
 (*Next Obligation. unfold empty. symmetry. apply Heq_anonymous. Qed.*)
+
+Program Definition build_fun C D (Cfin : fin C) (Dfin : fin D)
+                       : list (C -> D)
+  := match (el Dfin) with
+    | nil => (match (el Cfin) as l return (el Cfin = l) -> list (C -> D) with
+            | nil => (fun Heq =>  cons (@empty_fun C D Cfin Heq) nil)
+            | c :: qc => fun _ => nil
+            end) eq_refl
+    | d :: qd => List.map (retrieve_option d) (build_fun_opt (eq_dec Cfin) (eq_dec Dfin) (el Cfin) (el Dfin))
+    end.
+
+Definition F_opt C im pre := (fun (h : A -> C) (a : A) =>
+      if eq_dec Afin pre a then im else h a).
 
 
 Program Definition funAB : fin (A -> B) := {| el := build_fun Afin Bfin |}.
@@ -202,45 +221,122 @@ Next Obligation. Check List.forallb.
     destruct (eq_dec Bfin (a x) (b x)). easy. contradict n. apply H0.
 Qed.
 Next Obligation.
-  induction (el Bfin) eqn : EQB. induction (el Afin) eqn : EQA.
-  + unfold build_fun. rewrite EQB. Check Eqdep_dec.UIP_dec.
-  
-    assert (empty Afin) as Em. apply EQA.
-    pose proof (Eqdep_dec.UIP_dec).
+  induction (el Bfin) eqn : EQB.
+  + induction (el Afin) eqn : EQA.
+    - unfold build_fun. rewrite EQB. Check Eqdep_dec.UIP_dec.
+      assert (empty Afin) as Em. apply EQA.
+    (*pose proof (Eqdep_dec.UIP_dec).
     
-    replace (match el Afin as l return (el Afin = l -> list (A -> B)) with
-   | nil => fun Heq : el Afin = nil => empty_fun Heq :: nil
-   | c :: qc => fun _ : el Afin = c :: qc => nil
-   end eq_refl) with (empty_fun (D := B) Em :: nil). cbn. left.
-   apply functional_extensionality. intro. pose proof (all_el Afin).
-   rewrite EQA in H0. contradict (H0 x).
+      replace (match el Afin as l return (el Afin = l -> list (A -> B)) with
+     | nil => fun Heq : el Afin = nil => empty_fun Heq :: nil
+     | c :: qc => fun _ : el Afin = c :: qc => nil
+     end eq_refl) with (empty_fun (D := B) Em :: nil). cbn. left.
+     apply functional_extensionality. intro. pose proof (all_el Afin).
+     rewrite EQA in H0. contradict (H0 x).
 
+     
+       assert ((fun (y : list A) (EQA0 : y = nil) =>
+    empty_fun (Em) :: nil =
+    (match y as l return (y = l -> list (A -> B)) with
+    | nil => fun Heq : y = nil => empty_fun Em :: nil
+    | c :: qc => fun _ : y = c :: qc => nil
+    end eq_refl)) (el Afin) EQA). now rewrite EQA.
+
+    cbn in H0.*)
+    assert ((fun Heq : el Afin = nil => empty_fun (D := B) Heq :: nil) 
+        =  (fun _ : el Afin = nil => empty_fun Em :: nil)).
+    apply functional_extensionality. intro. apply f_equal2.
+    apply empty_fun_ind_of_proof. reflexivity. rewrite H. rewrite EQA.
+    assert (a = empty_fun Em). apply functional_extensionality. intro.
+    pose proof (all_el Afin). rewrite EQA in H0. contradict (H0 x).
+    rewrite H0. apply in_eq.
+
+  (*
+  apply H0. cbn.
+
+     rewrite EQA. replace el0 with nil.
+      case (el Afin). rewrite <- EQA.
+  *)
+
+    - pose proof (all_el Bfin). rewrite EQB in H. contradict (H (a a0)).
+
+  +
+  assert (forall l f, (forall x, match In_is_decidable l x with 
+  | left _ => exists b, f x = Some b
+  | right _ => f x = None
+  end)
+  -> In f (build_fun_opt (eq_dec Afin) (eq_dec Bfin) l (el Bfin))).
+  induction l0; cbn.
+  - intros. left. apply functional_extensionality. intro.
+    specialize H with x. destruct (In_is_decidable nil x). contradict i. now symmetry.
+  - intros. assert (f = (F_opt (f a1) a1 (fun x => match In_is_decidable l0 x with 
+    | left _ => f x
+    | right _ => None
+    end))).
+    apply functional_extensionality. intro. unfold F_opt.
+    destruct (eq_dec Afin a1 x). now rewrite <- e.
+    destruct (In_is_decidable l0 x). easy. specialize H with x.
+    destruct (In_is_decidable (a1 :: l0) x). destruct i. now contradict H0.
+    now contradict H0. assumption.
+  
+  
+    assert (forall l_temp, (match f a1 with | Some b => In b l_temp |None => True end) ->  In f
+     (add_last_image (eq_dec Afin) (eq_dec Bfin) l_temp
+     (build_fun_opt (eq_dec Afin) (eq_dec Bfin) l0 (el Bfin)) a1)).
+    ++
+    induction l_temp. 
+    * intro. pose proof (H a1). destruct (In_is_decidable (a1 :: l0) a1).
+      destruct H2. rewrite H2 in H1. contradict H1.
+      contradict n. apply in_eq.
+    * intro. pose proof (H a1). destruct (In_is_decidable (a1 :: l0) a1).
+      destruct H2. rewrite H2 in H1. destruct H1.
+      ** unfold add_last_image. apply in_or_app. left.
+        assert (F_opt (f a1) a1 = 
+        (fun (h : A -> option B) (a3 : A) => if eq_dec Afin a1 a3 then Some a2 else h a3)).
+        unfold F_opt. apply functional_extensionality. intro. apply functional_extensionality. intro.
+        destruct (eq_dec Afin a1 x1). rewrite H2. now rewrite H1. easy.
+        rewrite H0. rewrite <- H3. apply in_map. apply IHl0. intro. destruct (In_is_decidable l0 x0).
+        pose proof (H x0). destruct (In_is_decidable (a1 :: l0) x0). apply H4. contradict n. now apply in_cons. easy.
+      ** unfold add_last_image. apply in_or_app. right. apply IHl_temp. now rewrite H2.
+     ** contradict n. apply in_eq.
+    
+    
+    ++ apply H1. pose proof (H a1). destruct (In_is_decidable (a1 :: l0) a1).
+      destruct H2. rewrite H2. apply (all_el Bfin). now rewrite H2.
+    
+    
+   - unfold build_fun. rewrite EQB. assert (a = retrieve_option a0 (fun x => Some (a x))).
+    apply functional_extensionality. intro. now cbn.
+    rewrite H0. apply in_map. rewrite <- EQB. apply H. intro.
+    destruct (In_is_decidable (el Afin) x). now exists (a x). contradict n. apply (all_el Afin).
    
-     assert ((fun (y : list A) (EQA0 : y = nil) =>
-  empty_fun (Em) :: nil =
-  (match y as l return (y = l -> list (A -> B)) with
-  | nil => fun Heq : y = nil => empty_fun Em :: nil
-  | c :: qc => fun _ : y = c :: qc => nil
-  end eq_refl)) (el Afin) EQA). now rewrite EQA.
-
-  cbn in H0.
-  assert ((fun Heq : el Afin = nil => empty_fun (D := B) Heq :: nil) 
-      =  (fun _ : el Afin = nil => empty_fun Em :: nil)).
-  apply functional_extensionality. intro. apply f_equal2.
-  apply empty_fun_ind_of_proof. reflexivity. rewrite H1. apply H0.
-
-apply H0. cbn.
-
-   rewrite EQA. replace el0 with nil.
-    case (el Afin). rewrite <- EQA.
-
-assert (forall l f, (forall x, f x = match In_is_decidable l x with 
-  | left _ => f x
-  | right _ => None
-  end) -> In f (build_fun_opt (eq_dec Afin) (eq_dec Bfin) l (el Bfin))).
-  induction l; cbn. intros. left. apply functional_extensionality. intro.
-  specialize H with x. destruct (In_is_decidable nil x). contradict i. now symmetry.
-  intros. pose proof (all_el Bfin). induction (el Bfin). cbn.
+   (*
+    assert (a = (fun (h : A -> option B) (x : A) =>
+      match h x as anonymous' return (anonymous' = h x -> B) with
+      | Some d0 => fun _ : Some d0 = h x => d0
+      | None => fun _ : None = h x => a0
+      end eq_refl) (fun x => Some (a x))).
+    
+    
+    
+    
+    
+    
+    destruct H with a1. now left. rewrite H3 in H2. inversion H2.
+    unfold add_last_image. rewrite H1.
+    Search app. apply in_or_app. left.
+    
+    assert (F_opt (f a1) a1 = 
+      (fun (h : A -> option B) (a3 : A) => if eq_dec Afin a1 a3 then Some a2 else h a3)).
+    admit.
+    rewrite <- H5. apply in_map. unfold build_fun_opt. cbn. rewrite EQB. apply IHl_temp.
+    
+     unfold add_last_image. simpl. cbn. (*apply IHl_temp. assumption.*)
+  
+  
+    rewrite H1. unfold add_last_image. (*unfold build_fun_opt. cbn.*)
+    rewrite EQB. cbn. apply in_map.
+     (* TODO *) apply in_map.
   
   
   
@@ -268,7 +364,7 @@ assert (forall l f, (forall x, f x = match In_is_decidable l x with
     rewrite H0. apply in_map. apply IHl. intros. now destruct (In_is_decidable l x).
   
   + apply H. intro. destruct (In_is_decidable (el Afin) x). easy. 
-    contradict n. apply (all_el Afin).
+    contradict n. apply (all_el Afin).*)
 Qed.
 
 
