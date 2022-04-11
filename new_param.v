@@ -3,9 +3,12 @@ Require Import Psatz.
 Require Export Setoid Morphisms.
 Set Implicit Arguments.
 
+From Project Require Import FiniteSet.
+
 Section B.
 
-Search sigT.
+(*
+Search sigT.*)
 (*Definition type_valide K := { TBody : Type | K TBody}.*)
 
 Class B_param := { B : Type;
@@ -44,16 +47,6 @@ Class B_param := { B : Type;
   
   Coercion B : B_param >-> Sortclass.
   Coercion TBody : valid_type >-> Sortclass.
-  
-  (* Note:
-  For a boolean, we want to work on finite types only. Thus we will have :
-  Definition K T : exists (l : list T), forall (x : T), In x l.
-  *)
-  
-
-  
-  (*Context (B : B_param).*)
-  
 
 
 Definition BEq `{B_param} PB1 PB2 := BAnd (BImpl PB1 PB2) (BImpl PB2 PB1).
@@ -73,11 +66,8 @@ Ltac unfold_spec := try repeat (setoid_rewrite <- BAnd_spec)
                             || (setoid_rewrite <- BOr_spec)
                             || (setoid_rewrite <- BImpl_spec)
                             || (setoid_rewrite <- BForall_spec)
-                            || (setoid_rewrite <- BExists_spec)
-                            (*|| (setoid_rewrite <- BForall_set_spec)
-                            || (setoid_rewrite <- BExists_set_spec)
-                            || (setoid_rewrite <- BExists_fun_spec)*)
-                            (*|| (setoid_rewrite <- BIs_spec)*).
+                            || (setoid_rewrite <- BExists_spec).
+
 
 Section CPO_CL.
 
@@ -162,20 +152,9 @@ Section Forall_sets.
 End Forall_sets.
 
 
-
-
-Section Concrete_Examples.
-
 Require Import Bool.
 
-  (* Note:
-  For a boolean, we want to work on finite types only. Thus we will have :
-  Definition K T : exists (l : list T), forall (x : T), In x l.
-  *)
-  
-
-  
-  (*Context (B : B_param).*)
+Section Concrete_Examples.
 
 Program Instance Prop_B : B_param :=
   {|
@@ -190,109 +169,46 @@ Program Instance Prop_B : B_param :=
     BForall V Pv := forall v, Pv v;
     BExists V Pv := exists v, Pv v;
   |}.
-  
-  (*
- Axiom constructive_indefinite_description :
-  forall (A : Type) (P : A->Prop),
-    (exists x, P x) -> { x : A | P x }.
-  *)
-  
-  Import Coq.Lists.List.  Print nth.
-  
-  (*
-  Lemma eq_is_decidable A (l : list A) (H : forall x, List.In x l) : forall (x y : A) , x = y \/ x <> y.
-  Proof. intros x y. pose proof (H x). specialize H with y.
-  induction l. contradict H. apply in_inv in H, H0. 
-  destruct H. destruct H0. left. rewrite <- H. now rewrite <- H0.
-  *)
-  
-  
-  (*
-  Fixpoint enumerate A (l : list A) (a : A) : nat :=
-    match l with
-      | nil => 0
-      | a :: tl => 1
-      | b :: tl => 1 + (enumerate A tl a)
-    end.
-  *)
-  
-  (*Search "list".*)
-  
-  (*
- Fixpoint build_set A (l : list A) (H : forall x, List.In x l) (n : nat) : (A -> B) := 
-  match n with
-    | 0 => 
-  
- Fixpoint set_list A (l : list A) : list (A -> bool) := 
-  match l with 
-    | nil => nil
-    | a :: tl => (fun x => a) :: (set_list tl)
-  end.
-  *)
-  (* BROUILLON
-  
-  Définir les types finis dans un fichier à part comme ci-dessous
-  
-  Record fin X := {|
-    eq_dec : forall a b, {a = b} + {a <> b};
-    el : list A;
-    all_ell : forall a, List.In a el
-    |}.
-  K = fin
-  
-  
-  
-  
-  
-  
-  
-  
-  "list.filter" pour sélectionner selon une propriété --> autre chose
-  
-  match P a as b return P a = b -> (list {a | P a}) with
-  | true => lambda H. [(a, H)]
-  | false => lambda _ .[]
-  end eq_refl.
-  
-  Rmq : proof irrelevance est vrai sur les booléens ! -> chercher le lemme associé !
-  
-  
-  
-  
-  let rec f = function 
-    | [] -> [lambda _ .false]
-    | a::q -> let r = f q in List.map (lambda h b -> if a = b then false else h b) r ++ List.map (... true) r
-    *)
-  
-  
+
+  Import Coq.Lists.List.
+
+
+Program Definition bool_fin : fin bool := {| el := cons true (cons false nil) |}.
+Next Obligation. destruct a; destruct b. now left. now right. now right. now left. Qed.
+Next Obligation. destruct a. now left. right. now left. Qed.
+
+
  Program Instance Bool_B : B_param :=
   {|
     B := bool;
-    K T := {l : list T | forall  (x : T), List.In x l};
+    K := fin;
     is_true := Is_true;
     BTrue := true;
     BFalse := false;
     BAnd := andb;
     BOr := orb;
     BImpl := implb;
-    BForall V := fun P => List.forallb P (proj1_sig (projT2 V));
-    BExists V := fun P => List.existsb P (proj1_sig (projT2 V));
-  |}. (* Pb : NO IDEA how to prove these three below :'( --> should build list that contains all possible element : how ??? *)
+    BForall V := fun P => List.forallb P (el (projT2 V));
+    BExists V := fun P => List.existsb P (el (projT2 V));
+  |}.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
-  Next Obligation. Admitted. (* This one is hard. How to build a type that is a sublist of another, by filtering along a property ? *)
-  Next Obligation. Admitted. (* prove that the set of functions is finite if X is finite *)
-  Next Obligation. Admitted. (* prove that the set of X -> bool is finite if X is finite *)
+  Next Obligation. exists (el (@funP A X P)). apply (eq_dec (@funP A X P)).
+   apply (all_el (@funP A X P)). Qed. (* This one is hard. How to build a type that is a sublist of another, by filtering along a property ? *)
+  Next Obligation. exists (el (@funAB A A X X)). apply (eq_dec (@funAB A A X X)).
+   apply (all_el (@funAB A A X X)). Qed. (* prove that the set of functions is finite if X is finite *)
+  Next Obligation. exists (el (@funAbool A X)). apply (eq_dec (@funAbool A X)).
+   apply (all_el (@funAbool A X)). Qed. (* prove that the set of X -> bool is finite if X is finite *)
   Next Obligation.
     split; intro Q. apply Is_true_eq_left. apply List.forallb_forall. 
     intros x Hx. apply Is_true_eq_true. apply Q.
     intro x. apply Is_true_eq_left. apply Is_true_eq_true in Q. rewrite List.forallb_forall in Q.
-    apply Q. destruct constructive_indefinite_description. cbn. apply i.
+    apply Q. cbn in *. apply (all_el X).
   Qed.
   Next Obligation.
     split; intro Q. destruct Q as [x Hx]. apply Is_true_eq_left. apply List.existsb_exists.
-    exists x. split. destruct constructive_indefinite_description. cbn. apply i. now apply Is_true_eq_true.
+    exists x. split. cbn in *. apply (all_el X). now apply Is_true_eq_true.
     apply Is_true_eq_true in Q. apply List.existsb_exists in Q. destruct Q as [x Hx]. exists x.
     apply Is_true_eq_left. apply Hx. Qed.
 
@@ -584,7 +500,7 @@ Section Particular_CPOs.
  Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {P : B_CPO P'}.
  
  #[global]
-  Program Definition valid_mon_type := exist K (mon) _.
+  Program Definition valid_mon_type := existT K (mon) _.
   Next Obligation. destruct X as [T KT]; cbn. unfold mon. apply subtype_closure. now apply function_closure. Qed.
 
 (* PB : J'ai défini les CPO sur les types valides, car j'avais besoin d'un forall sur X pour définir les ensembles dirigés.
@@ -879,7 +795,7 @@ Section Increasing_fixpoint.
    cbn in H. rewrite <- BForall_spec in H. apply H. 
   Qed.
   
-  Check H_sup.
+  (*Check H_sup.*)
 
   Lemma H_sup_bot_is_fixpoint_of_all_Increasing (F:mon) :
     is_true (Increasing F) -> is_true (Fix F ((FBody H_sup) bot)).
@@ -1119,4 +1035,3 @@ Section Fixpoints.
   Qed.
 *)
 End Fixpoints.
-
