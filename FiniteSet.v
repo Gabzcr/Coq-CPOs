@@ -256,15 +256,17 @@ Section SubType.
   Check List.filter.
   Print List.filter.
   
+  Search Bool.Is_true.
+  
   Program Fixpoint build_subset (l : list A) : list (subAP) := match l with
     | nil => nil
     | a :: l0 => let new_element := match P a as b return P a = b -> (list subAP) with
-        | true => (fun H => cons (exist (fun x => Bool.Is_true (P x)) a _) nil)
+        | true => (fun H => cons (exist (fun x => Bool.Is_true (P x)) a (Bool.Is_true_eq_left (P a) H)) nil)
         | false => fun _  => nil
       end eq_refl
       in new_element ++ (build_subset l0)
   end.
-  Next Obligation. now apply Bool.Is_true_eq_right. Qed.
+  (*Next Obligation. now apply Bool.Is_true_eq_right. Qed.*)
 
 (*Require Import Coq.Program.Equality.*)
 
@@ -289,17 +291,154 @@ Proof. intro. destruct a. cbn. reflexivity. Qed.
     (*destruct a as [a Pa].*)
     assert (forall (l : list A) x, match (@In_is_decidable A Afin l (proj1_sig x)) (*as b return 
         (In_is_decidable l (proj1_sig x)) = b -> Prop*) with
-      | left Px => In (exist (fun a0 : A => Bool.Is_true (P a0)) (proj1_sig x) (proj2_sig x)) (build_subset l)
+      | left Px => In x (build_subset l)
       | right _ => True
       end).
     - intros l x. (*destruct x as [x Px]. cbn.*) destruct (In_is_decidable l (proj1_sig x)).
       -- induction l. contradict i. cbn. apply in_or_app.
-         inversion i. left. 
+         inversion i. left.
+     
+     
+     
+     assert (((if P a0 as b return (P a0 = b -> list subAP)
+    then
+     fun H0 : P a0 = true =>
+     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H0)
+     :: nil
+    else fun _ : P a0 = false => nil) eq_refl) = ((if P a0 as b return (P a0 = b -> list subAP)
+    then
+     fun H0 : P a0 = true =>
+     x
+     :: nil
+    else fun _ : P a0 = false => nil) eq_refl)). 
+    (*beginning of garbage*)
+    
+    
+    assert ((if P a0 as b return (P a0 = b -> list subAP)
+    then
+     fun H0 : P a0 = true =>
+     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H0)
+     :: nil
+    else fun _ : P a0 = false => nil) = (if P a0 as b return (P a0 = b -> list subAP)
+    then
+     fun H0 : P a0 = true =>
+     x
+     :: nil
+    else fun _ : P a0 = false => nil)).
+    (*beginning of garbage of type 2 *)
+    
+    
+     
+     
+         assert ((fun H0 : P a0 = true =>
+     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H0)
+     :: nil) = fun H0 =>
+     x
+     :: nil).
+     (*end of garbage of type 3 *)
+     
+     apply functional_extensionality. intro Pa0.
+     assert (exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) Pa0) = x).
+     
+     destruct x. cbn in *. induction H. assert ((Bool.Is_true_eq_left (P a0) Pa0) = i0).
+      apply test. now rewrite H.
+     
+     
+     
+     now rewrite H0.
+
+     
+     
+   
+     (*end of garbage of type 3 *)
+     now rewrite H0.
          
+     
+     
+     
+     
+     
+     (*end of garbage of type 2 *)
+     now rewrite H0.
+    
+    
+    
+    
+    
+    (*end of garbage*)
+    setoid_rewrite H0. rewrite H. destruct (P (proj1_sig x)) eqn : EQ. apply in_eq.
+    contradict EQ.
+    rewrite (Bool.Is_true_eq_true (P (proj1_sig x)) (proj2_sig x)). apply Bool.diff_true_false.
+    
+    right. now apply IHl.
+      -- easy.
+    
+    - specialize H with (el Afin) a. destruct (In_is_decidable (el Afin) (proj1_sig a)).
+      assumption. contradict n. apply (all_el Afin).
+ Qed.
+    
+    
+    
+    
+    
+    
+     
+     assert ((if P a0 as b return (P a0 = b -> list subAP)
+    then
+     fun H0 : P a0 = true =>
+     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H0)
+     :: nil
+    else fun _ : P a0 = false => nil) = (if P a0 as b return (P a0 = b -> list subAP)
+    then
+     fun H0 : P a0 = true =>
+     x
+     :: nil
+    else fun _ : P a0 = false => nil)). admit. rewrite H0.
+         
+         assert ((fun H0 : P a0 = true =>
+     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H0)
+     :: nil) = fun H0 =>
+     x
+     :: nil). admit. setoid_rewrite H0.
+         
+          destruct (P a0).
+         
+
+  (*
+    rewrite H.
+    
+    
+        assert (((if P (proj1_sig x) as b return (P (proj1_sig x) = b -> list subAP)
+    then
+     fun H0 : P (proj1_sig x) = true =>
+     exist (fun x0 : A => Bool.Is_true (P x0)) (proj1_sig x)
+       (Bool.Is_true_eq_left (P (proj1_sig x)) H0) :: nil
+    else fun _ : P (proj1_sig x) = false => nil) eq_refl)
+      = ((if P (proj1_sig x) as b return (P (proj1_sig x) = b -> list subAP)
+    then
+     fun H0 : P (proj1_sig x) = true =>
+     x :: nil
+    else fun _ : P (proj1_sig x) = false => nil) eq_refl)). 
+    (*above is beginning of proof*)
+    
+    assert ((fun H0 : P (proj1_sig x) = true =>
+  exist (fun x0 : A => Bool.Is_true (P x0)) (proj1_sig x)
+    (Bool.Is_true_eq_left (P (proj1_sig x)) H0) :: nil) = fun H1 => x :: nil).
+  apply functional_extensionality. intros.
+  
+  assert (exist (fun x1 : A => Bool.Is_true (P x1)) (proj1_sig x)
+  (Bool.Is_true_eq_left (P (proj1_sig x)) x0) = x).
+  
+  destruct x. cbn in *. assert ((Bool.Is_true_eq_left (P x) x0) = i0). apply test.
+  
+     *)
+     
+     
+     (*
          assert (((if P a0 as b return (P a0 = b -> list subAP)
     then
      fun H1 : P a0 = true =>
-     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (build_subset_obligation_1 H1) :: nil
+     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H1) :: nil
     else fun _ : P a0 = false => nil) eq_refl)
       = ((if P a0 as b return (P a0 = b -> list subAP)
     then
@@ -309,16 +448,45 @@ Proof. intro. destruct a. cbn. reflexivity. Qed.
     (*above is beginning of proof*)
     
     assert ((fun H1 : P a0 = true =>
-  exist (fun x0 : A => Bool.Is_true (P x0)) a0 (build_subset_obligation_1 H1) :: nil) = fun H1 => x :: nil).
+  exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H1) :: nil) = fun H1 => x :: nil).
   apply functional_extensionality. intros.
-
+  
+  assert (exist (fun x1 : A => Bool.Is_true (P x1)) a0 (Bool.Is_true_eq_left (P a0) x0) = x).
+  destruct x. cbn in *. admit. *)(*
+  assert ((Bool.Is_true_eq_left (P a0) x0) = i0).
   admit.
   
+  
+  now rewrite H0.*)
+  
+  
+  
+  assert ((fun H0 : P a0 = true =>
+     exist (fun x0 : A => Bool.Is_true (P x0)) a0 (Bool.Is_true_eq_left (P a0) H0)
+     :: nil) = fun H1 => x :: nil).
+  apply functional_extensionality. intros.
+  
+  assert (exist (fun x1 : A => Bool.Is_true (P x1)) a0 (Bool.Is_true_eq_left (P a0) x0) = x).
+  
+  destruct x. cbn in *. assert ((Bool.Is_true_eq_left (P a0) x0) = i0). apply test.
+  
+  
+  
+  
+  
   now rewrite H0.
+  
+  now rewrite H0.
+  
+  
     
     (*Below is end of proof*)
-    setoid_rewrite H0.
-    rewrite H. destruct (P (proj1_sig x)) eqn : EQ. 
+    setoid_rewrite H0. rewrite fold_proj.
+    
+    
+    
+     (*destruct x. cbn in *.*)
+    (*rewrite H.*) destruct (P (proj1_sig x)) eqn : EQ. 
     assert (exist (fun a1 : A => Bool.Is_true (P a1)) (proj1_sig x) (proj2_sig x) = x).
     apply fold_proj.
     rewrite H1. Search In. apply in_eq. contradict EQ.
