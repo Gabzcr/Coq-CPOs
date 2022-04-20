@@ -3,22 +3,16 @@ Require Import Psatz.
 Require Export Setoid Morphisms.
 Set Implicit Arguments.
 
-From Project Require Import FiniteSet.
-
 Section B.
-
-(*
-Search sigT.*)
-(*Definition type_valide K := { TBody : Type | K TBody}.*)
 
 Class B_param := { B : Type;
   K : Type -> Type;
   
   (* Basic operations on B *)
-  is_true : B -> Prop; (* need this to define everything *)
+  is_true : B -> Prop;
   
-  BFalse : B; (* need this to define bottom in a CL *)
-  BTrue : B; (* idem *)
+  BFalse : B;
+  BTrue : B;
   BFalse_spec : ~ (is_true BFalse);
   BTrue_spec : is_true BTrue;
   BAnd : B -> B -> B;
@@ -109,7 +103,6 @@ Class B_CPO `(P' : B_PO) := {
 (* Definition of Lattice as a particular (stronger) CPO. *)
 Class B_CL `(L' : B_PO) := {
     Sup: (X -> B) -> X;
-    (*sup_spec0 : forall Y y, is_true (Y y) -> is_true (leq y (sup Y));*)
     Sup_spec: forall Y z, leq_in_prop (Sup Y) z <-> (forall y, is_true (Y y) -> leq_in_prop y z);
   }.
   (* Convention : capital letters for CL from now on. *)
@@ -150,69 +143,6 @@ Section Forall_sets.
   now apply set_closure. Qed.
 
 End Forall_sets.
-
-
-Require Import Bool.
-
-Section Concrete_Examples.
-
-Program Instance Prop_B : B_param :=
-  {|
-    B := Prop;
-    K A := True;
-    is_true P := P;
-    BTrue := True;
-    BFalse := False;
-    BAnd := and;
-    BOr := or;
-    BImpl P Q := P -> Q;
-    BForall V Pv := forall v, Pv v;
-    BExists V Pv := exists v, Pv v;
-  |}.
-
-  Import Coq.Lists.List.
-
-
-Program Definition bool_fin : fin bool := {| el := cons true (cons false nil) |}.
-Next Obligation. destruct a; destruct b. now left. now right. now right. now left. Qed.
-Next Obligation. destruct a. now left. right. now left. Qed.
-
-
- Program Instance Bool_B : B_param :=
-  {|
-    B := bool;
-    K := fin;
-    is_true := Is_true;
-    BTrue := true;
-    BFalse := false;
-    BAnd := andb;
-    BOr := orb;
-    BImpl := implb;
-    BForall V := fun P => List.forallb P (el (projT2 V));
-    BExists V := fun P => List.existsb P (el (projT2 V));
-  |}.
-  Next Obligation. destruct b1; destruct b2; intuition. Qed.
-  Next Obligation. destruct b1; destruct b2; intuition. Qed.
-  Next Obligation. destruct b1; destruct b2; intuition. Qed.
-  Next Obligation. exists (el (@funP A X P)). apply (eq_dec (@funP A X P)).
-   apply (all_el (@funP A X P)). Qed. (* This one is hard. How to build a type that is a sublist of another, by filtering along a property ? *)
-  Next Obligation. exists (el (@funAB A A X X)). apply (eq_dec (@funAB A A X X)).
-   apply (all_el (@funAB A A X X)). Qed. (* prove that the set of functions is finite if X is finite *)
-  Next Obligation. exists (el (@funAbool A X)). apply (eq_dec (@funAbool A X)).
-   apply (all_el (@funAbool A X)). Qed. (* prove that the set of X -> bool is finite if X is finite *)
-  Next Obligation.
-    split; intro Q. apply Is_true_eq_left. apply List.forallb_forall. 
-    intros x Hx. apply Is_true_eq_true. apply Q.
-    intro x. apply Is_true_eq_left. apply Is_true_eq_true in Q. rewrite List.forallb_forall in Q.
-    apply Q. cbn in *. apply (all_el X).
-  Qed.
-  Next Obligation.
-    split; intro Q. destruct Q as [x Hx]. apply Is_true_eq_left. apply List.existsb_exists.
-    exists x. split. cbn in *. apply (all_el X). now apply Is_true_eq_true.
-    apply Is_true_eq_true in Q. apply List.existsb_exists in Q. destruct Q as [x Hx]. exists x.
-    apply Is_true_eq_left. apply Hx. Qed.
-
-End Concrete_Examples.
 
 
 Section Partial_order.
@@ -504,7 +434,7 @@ Section Particular_CPOs.
   Next Obligation. destruct X as [T KT]; cbn. unfold mon. apply subtype_closure. now apply function_closure. Qed.
 
 (* PB : J'ai défini les CPO sur les types valides, car j'avais besoin d'un forall sur X pour définir les ensembles dirigés.
-Donc il faut que l'ensemble des fonctions monotones soit aussi un type valide. Mais on n'a pas de propriété de clôture par les enregistrements. *)
+Donc il faut que l'ensemble des fonctions monotones soit aussi un type valide. Ceci requiert functional extentisionality (cf FiniteSet.v) . *)
 
  Program Instance B_PO_mon : @B_PO B valid_mon_type :=
     {|
@@ -639,59 +569,9 @@ Donc il faut que l'ensemble des fonctions monotones soit aussi un type valide. M
    intros. rewrite included_spec in Hd. now apply Hd. Qed.
 
 
-(* Doesn't work : requires dependent pair in B :'( *)
-
-(*
-  Definition set_type (Y : X -> B) : Type := { x : X | is_true (Y x)}.
-  Definition element Y (y :set_type Y) := proj1_sig y.
-  #[global] Coercion element : set_type >-> X.
-
-  Definition complete_body {Y : X -> B} (D : (set_type Y) -> B) : X -> B :=
-    (fun x => {is_in_Y : is_true (Y x) & (D (exist _ x is_in_Y))}).
-    
-  Program Instance subPO (Y:set X) : (PO (set_type Y)) :=
-    {|
-      weq x y := (@weq X P') x y;
-      leq x y := (@leq X P') x y;
-    |}.
-  Next Obligation. apply Build_PreOrder; intro x. reflexivity. intros y z Hxy Hyz. now transitivity y. Qed.
-  Next Obligation. apply weq_spec. Qed.
-
-  Program Instance subCPO (Y:set X) (H : is_subCPO Y) : (CPO (subPO Y)) :=
-    {|
-      sup D := sup (exist (Directed leq) (complete_body D) _) ;
-    |}.
-  Next Obligation.
-    destruct D as [D Hd]. cbn. intros x y Hx Hy. inversion Hx. inversion Hy.
-    destruct (Hd (exist (fun x : X => Y x) x x0) (exist (fun x : X => Y x) y x1))
-      as [[z Pz] [Hz [Hxz Hyz]]]; try assumption.
-    exists z. split. now exists Pz. now split.
-  Qed.
-  Next Obligation.
-    apply H. intros x Hx.
-    destruct D as [D Hd]; cbn in Hx. now destruct Hx.
-  Qed.
-  Next Obligation.
-    split.
-    + intros. apply (sup_spec (exist (Directed leq) (complete_body D) (subCPO_obligation_1 D))); cbn.
-      assumption. destruct y. cbn.
-      now exists y.
-      + intros. apply sup_spec. cbn. intros. destruct H1. now apply (H0 (exist (fun x : X => Y x) y x)).
-  Qed.
-*)
-
   (* Some instances that can now be defined on CPO_parts and CPO_mon. *)
 
   Variable F : X -> X.
-
-(*
-  #[global] Instance image_eq : Proper (@weq_in_prop B valid_set_type B_PO_parts ==> weq_in_prop) (Image F).
-  Proof. intros Y1 Y2 HY. apply weq_spec. unfold Image. unfold leq_in_prop. cbn. setoid_rewrite included_spec.
-   setoid_rewrite <- BExists_spec. setoid_rewrite <- BAnd_spec. split; intros x H; destruct H as [y [Hy Hxy]];
-   exists y; apply weq_spec in HY; destruct HY as [Y12 Y21]; unfold leq_in_prop in Y12, Y21; cbn in *; rewrite included_spec in Y12, Y21;
-   split. now apply Y12. assumption. now apply Y21. assumption.
- Qed.
-*)
 
   #[global] Instance set_incl : Proper (@weq_in_prop B valid_set_type B_PO_parts ==> weq_in_prop ==> BEq_in_prop) included.
   Proof. intros Y1 Y2 H12 Y3 Y4 H34. apply BEq_spec. setoid_rewrite included_spec.
@@ -764,22 +644,15 @@ Section Increasing_fixpoint.
 
   Definition Increasing F := BForall X (fun x => leq x (F x)).
   Definition Increasing_restricted Y F := BAnd (Invariant F Y) (BForall X (fun x => BImpl (Y x) (leq x (F x)))).
-  (* Note : this definition might cause some problems when Y is not F-Invariant, 
-     but it is simpler to define it that way *)
 
   Definition leq_mon f g := (@leq B valid_mon_type B_PO_mon f g).
   Definition weq_mon f g := (@weq B valid_mon_type B_PO_mon f g).
 
   Program Definition Increasing_functions := exist (Directed_in_prop leq_mon) (Increasing) _.
   Next Obligation.
-    apply Directed_spec. unfold_spec. intros f g Hf Hg. exists (comp f g). (*destruct Hg as [Invg Subg]. destruct Hf as [Invf Subf].*)
-    (*setoid_rewrite <- BForall_spec in Hf. setoid_rewrite <- BForall_spec in Hg.*)
-    repeat split. (*apply BForall_spec.*)
-    (*+ intros x HYfgx. destruct HYfgx as [x0 [Yx0 fgx]].
-      apply Invf. exists (g x0). split; try assumption.
-      apply Invg. exists x0. split; try assumption. fold (weq_in_prop (g x0) (g x0)). reflexivity.*)
-    + intros x. fold_leq. cbn. destruct g as [g gmon]; cbn in *. transitivity (g x). apply Hg. apply Hf. (*now apply Subg. apply Subf.
-      apply Invg. exists x. split; try assumption. fold (weq_in_prop (g x) (g x)). reflexivity.*)
+    apply Directed_spec. unfold_spec. intros f g Hf Hg. exists (comp f g). 
+    repeat split.
+    + intros x. fold_leq. cbn. destruct g as [g gmon]; cbn in *. transitivity (g x). apply Hg. apply Hf. 
     + destruct f as [f fmon]; cbn in *. apply BForall_spec. intro x. fold_leq.
       rewrite <- BMonotony_spec in fmon. apply fmon. apply Hg.
     + cbn. apply BForall_spec. intro x. cbn. apply Hf.
@@ -814,13 +687,6 @@ Section Increasing_fixpoint.
   Proof.
     intro. exists ((FBody H_sup) bot). now apply H_sup_bot_is_fixpoint_of_all_Increasing.
   Qed.
-  
-  (*
-  Lemma restricted_increasing_has_fix_point (F:mon) Y : is_true (Increasing_restricted Y F) 
-    -> exists x, is_true (Fix F x).
-  Proof.
-    intro. exists (H_sup bot). apply H_sup_bot_is_fixpoint_of_all_Increasing.
-Faux, il faut vraiment se restreindre à Y *)
 
 End Increasing_fixpoint.
 
@@ -878,7 +744,7 @@ Section Fixpoints.
     - unfold Post. fold_leq. intro Hx. fold_leq. now rewrite H.
       + now apply P0_is_smallest_invariant_subCPO.
   Qed.
-  (* Note : contrarily to the book, here P0' was never used for now, neither was phi. *)
+  (* Note : contrarily to the book, here P0' was never used, neither was phi. *)
 
   Lemma P0_is_in_down x : is_true (Fix F x) -> is_true (included (P0 F) (down x)).
   Proof.
@@ -886,7 +752,7 @@ Section Fixpoints.
                 /\ is_true (is_subCPO (down x))
                 /\ (forall z y, z == y -> is_true ((down x) z) <-> is_true ((down x) y))).
     + repeat split.
-    - unfold_spec. (*apply BForall_spec. setoid_rewrite <- BImpl_spec. setoid_rewrite <- BExists_spec.*)
+    - unfold_spec.
       intros y Hy. destruct Hy as [x0 [Dx0 Fyx0]]. unfold down. fold_leq. unfold Fix in H.
       rewrite <- H. rewrite Fyx0. destruct F as [Ff Fmon]. cbn in *. rewrite <- BMonotony_spec in Fmon.
       apply Fmon. apply Dx0.
@@ -896,23 +762,9 @@ Section Fixpoints.
       + now apply P0_is_smallest_invariant_subCPO.
   Qed.
 
-(* Need to change this so that I don't need dependent pair. Go back to Increasing and define it on a subset. *)
-(*
-  Program Instance P0_PO : B_PO (set_type (P0 F)) := (subPO _).
-  Program Instance P0_CPO : CPO P0_PO := (subCPO _).
-  Next Obligation. apply P0_is_invariant_subCPO. Qed.
-  Program Definition F_restricted_to_P0 : mon :=
-    {| body := fun y => (exist _ (F y) _) |}.
-  Next Obligation. destruct y as [x Hx]; cbn. apply P0_is_invariant_subCPO. now apply from_image. Qed.
-  Next Obligation. intros y1 y2 H12; cbn. now apply Hbody. Qed.
-*)
 
 
-
-
-
-
-(* ------ Dodging subCPOs ------ *)
+(* ------ Dodging subCPOs, to avoid type-dependent objects ------ *)
 
  Definition mon_fun_applied (Y : X -> B) (z : X) (x0 : X) := 
   BExists (valid_fun_type) (fun h => BAnd (weq x0 (h z)) 
@@ -936,10 +788,8 @@ Section Fixpoints.
   rewrite <- Directed_spec. repeat setoid_rewrite <- mon_fun_spec.
   intros x y Hx Hy. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
   destruct Hy as [hy [Hhy [hymon [hyinc [hyinv HYy]]]]].
-  (*destruct Hx as [hx Hx]. destruct Hy as [hy Hy].*)
   exists (hx (hy z)). repeat split. exists (fun x => hx (hy x)).
-  + (*intro HYz.*) (*destruct Hx as [Hhx [hxmon [hxinc [hxinv HYx]]]].*)(*assumption.*)
-  (*destruct Hy as [Hhy [hymon [hyinc [hyinv HYy]]]].*) (*assumption.*) repeat split.
+  + repeat split.
   fold_weq. reflexivity.
   intros x0 y0 Hx0 Hy0 Hxy0. apply hxmon; try now apply hyinv. now apply hymon.
   intros x0 Hx0. fold_leq. transitivity (hy x0). now apply hyinc. apply hxinc. now apply hyinv.
@@ -955,7 +805,7 @@ Section Fixpoints.
 
 
  Lemma set_of_fun_is_subCPO (Y : X -> B) : is_true (is_subCPO Y) 
-   -> (forall x y, weq_in_prop x y -> (is_true (Y x) <-> is_true (Y y))) (* WARNING : Y need to preserve weq ! *)
+   -> (forall x y, weq_in_prop x y -> (is_true (Y x) <-> is_true (Y y)))
    -> is_true (mon_fun_applied Y bot (sup (fun_on_Y_subCPO Y bot))).
  Proof. unfold is_subCPO. setoid_rewrite <- BForall_spec.
   unfold_spec. intro H. exists (fun x => sup (fun_on_Y_subCPO Y x)). repeat split.
@@ -970,8 +820,6 @@ Section Fixpoints.
     destruct Hz as [hz [Hhz [hzmon [hzinc [hzinv HYz]]]]]. apply H0 with (hz x). apply Hhz. now apply hzinv.
   + apply H. intros x Hx. cbn in Hx. now apply BFalse_spec in Hx.
  Qed.
-
- (*Hypothesis fun_ext : forall x y, x == y -> is_true (P0 F x) <-> is_true (P0 F y). (* still need functional extensionality *)*)
 
  Theorem Fixpoint_II_no_subCPO : exists x, is_true (Fix F x).
  Proof.
@@ -1004,34 +852,4 @@ Section Fixpoints.
  Qed.
 
 
-
-
-
-
-(*
-  Lemma F_restricted_is_increasing : Increasing F_restricted_to_P0.
-  Proof. intro y. destruct y as [x Hx]; cbn. now apply P0_is_in_Post. Qed.
-  Theorem Fixpoint_II : exists x, Fix F x.
-  Proof.
-    destruct (increasing_has_fix_point F_restricted_to_P0 F_restricted_is_increasing).
-    destruct x as [x Hx]. cbn in H. now exists x.
-  Qed.
-  (* Actually, we can go further. Since we constructively built the fixpoint of G as being (H_sup bot) for a well-chosen CPO.
- So we can define this fixpoint and add the results from Claim 3 of the theorem : it is both the top of P0 and the least fixpoint of F.*)
-  Definition a := (H_sup bot). (*Here a is of type (set_type P0) since this was the last CPO to be defined.
- It's what we want, no need to specify implicit arguments. *)
-  Lemma a_is_fixpoint_of_F : Fix F (element a).
-  Proof.
-    assert (Fix F_restricted_to_P0 a). apply H_sup_bot_is_fixpoint_of_all_Increasing. apply F_restricted_is_increasing.
-    destruct a as [a Ha]. now cbn in *.
-  Qed.
-  Theorem a_is_top_of_P0_and_least_fixpoint_of_F :
-    is_greatest (P0 F) (element a) /\ is_least (Fix F) (element a).
-  Proof. split.
-         + split. destruct a as [µ Hmu]. now cbn. apply P0_is_in_down.
-           intros. apply a_is_fixpoint_of_F.
-         + split. apply a_is_fixpoint_of_F. intros. apply (P0_is_in_down y).
-           assumption. destruct a as [µ Hmu]. now cbn.
-  Qed.
-*)
 End Fixpoints.
