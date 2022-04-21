@@ -47,11 +47,11 @@ Next Obligation. destruct a. now left. right. now left. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. exists (el (@funP A X P)). apply (eq_dec (@funP A X P)).
-   apply (all_el (@funP A X P)). Qed.
+   apply (all_el (@funP A X P)). Defined.
   Next Obligation. exists (el (@funAB A A X X)). apply (eq_dec (@funAB A A X X)).
-   apply (all_el (@funAB A A X X)). Qed.
+   apply (all_el (@funAB A A X X)). Defined.
   Next Obligation. exists (el (@funAbool A X)). apply (eq_dec (@funAbool A X)).
-   apply (all_el (@funAbool A X)). Qed.
+   apply (all_el (@funAbool A X)). Defined.
   Next Obligation.
     split; intro Q. apply Is_true_eq_left. apply List.forallb_forall. 
     intros x Hx. apply Is_true_eq_true. apply Q.
@@ -67,20 +67,7 @@ Next Obligation. destruct a. now left. right. now left. Qed.
 End TruthValueInstances.
 
 
-
-
-
-Section CPO_Examples.
-
-Variant CPO_set : Type := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
-
-Program Definition CPO_fin : fin (CPO_set) := {| el := cons x2 (cons x1 (cons bottom nil)) |}.
-Next Obligation. destruct a; destruct b; try (now left); try (right; intro; inversion H). Defined.
-Next Obligation. destruct a; intuition. Defined.
-
-Definition CPO_valid_type := existT fin CPO_set CPO_fin.
-
- Program Definition eqbool {X : Type} {X_fin : fin X} (x y : X) : bool := match (eq_dec X_fin x y) with
+Program Definition eqbool {X : Type} {X_fin : fin X} (x y : X) : bool := match (eq_dec X_fin x y) with
   | left _ => true
   | right _ => false
   end.
@@ -97,6 +84,108 @@ Lemma eqbool_trans {X : Type} {X_fin : fin X} :
   destruct (eq_dec X_fin x y); destruct (eq_dec X_fin y z);
   destruct (eq_dec X_fin x z); try easy.
   contradict n. now rewrite e. Qed.
+
+
+
+
+Section Basic_CPOs.
+
+(* ----- Defining Propositions as a CPO over Prop ----- *)
+
+Program Definition Prop_valid_type := existT (fun P => True) Prop _.
+
+Program Instance B_PO_Prop : @B_PO Prop_B Prop_valid_type :=
+  {|
+    weq P Q := P <-> Q;
+    leq P Q := P -> Q;
+  |}.
+Next Obligation.
+  apply Build_PreOrder.
+  + now intros.
+  + intros P Q R. tauto.
+Qed.
+
+Program Instance B_CPO_Prop : B_CPO B_PO_Prop :=
+  {| 
+     sup D := exists2 P, D P & P;
+  |}.
+Next Obligation. firstorder. Qed.
+
+Program Instance B_Lattice_Prop : B_CPO B_PO_Prop :=
+  {| 
+     sup D := exists2 P, D P & P;
+  |}.
+Next Obligation. firstorder. Qed.
+
+
+(* ----- Defining Booleans as a CPO over booleans ----- *)
+
+ Program Definition leqb (b1 b2 : bool) := eqbool (X_fin := bool_fin) b1 false
+                                         || eqbool (X_fin := bool_fin) b2 true.
+
+Definition bool_valid_type := existT fin bool bool_fin.
+
+Program Instance B_PO_bool : @B_PO Bool_B bool_valid_type :=
+  {|
+    weq x y := eqbool (X_fin := bool_fin) x y; (*leqb x y && leqb y x;*)
+    leq := leqb;
+  |}.
+Next Obligation.
+  apply Build_PreOrder.
+  + intro x. destruct x; unfold leqb; apply orb_prop_intro; [right | left]; now apply eqbool_refl.
+  + intros x y z Hxy Hyz. unfold leqb in *. apply orb_prop_intro. apply orb_prop_elim in Hxy, Hyz.
+    destruct Hxy. now left. destruct Hyz. apply eqbool_refl in H, H0. rewrite H in H0. now contradict H0.
+    now right.
+Qed.
+Next Obligation. split; intro H. apply eqbool_refl in H. rewrite H.
+   split; now apply B_PO_bool_obligation_1.
+   destruct x, y; try (now apply eqbool_refl); destruct H as [H1 H2];
+   [apply orb_prop_elim in H1 as HF | apply orb_prop_elim in H2 as HF]; destruct HF as [HF | HF]; apply eqbool_refl in HF;
+   now contradict HF.
+Qed.
+
+Program Instance B_CPO_bool : B_CPO B_PO_bool :=
+  {| 
+     sup D := D true;
+  |}.
+  Next Obligation. destruct z.
+    split; intros; apply orb_prop_intro; right; now apply eqbool_refl.
+    split.
+    + intros Hsupz y HDy. destruct y; try (apply orb_prop_intro; left; now apply eqbool_refl).
+      destruct (D true). apply orb_prop_elim in Hsupz. destruct Hsupz as [HF | HF];
+      apply eqbool_refl in HF; now contradict HF. contradict HDy.
+    + intro H. specialize H with true. destruct (D true). now apply H.
+      apply orb_prop_intro. left. now apply eqbool_refl.
+   Qed.
+Program Instance B_Lattice_bool : B_CPO B_PO_bool :=
+  {| 
+     sup D := D true;
+  |}.
+  Next Obligation. destruct z.
+    split; intros; apply orb_prop_intro; right; now apply eqbool_refl.
+    split.
+    + intros Hsupz y HDy. destruct y; try (apply orb_prop_intro; left; now apply eqbool_refl).
+      destruct (D true). apply orb_prop_elim in Hsupz. destruct Hsupz as [HF | HF];
+      apply eqbool_refl in HF; now contradict HF. contradict HDy.
+    + intro H. specialize H with true. destruct (D true). now apply H.
+      apply orb_prop_intro. left. now apply eqbool_refl.
+   Qed.
+
+
+End Basic_CPOs.
+
+
+
+
+Section CPO_Examples.
+
+Variant CPO_set : Type := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
+
+Program Definition CPO_fin : fin (CPO_set) := {| el := cons x2 (cons x1 (cons bottom nil)) |}.
+Next Obligation. destruct a; destruct b; try (now left); try (right; intro; inversion H). Defined.
+Next Obligation. destruct a; intuition. Defined.
+
+Definition CPO_valid_type := existT fin CPO_set CPO_fin.
 
 
  Program Definition leq3 (x y : CPO_set) := eqbool (X_fin := CPO_fin) x y 
@@ -128,14 +217,16 @@ Next Obligation.
     - apply eqbool_refl in H0, H1. rewrite <- H0. rewrite H1. right. right.
       now apply eqbool_refl.
     - apply eqbool_refl in H1, H. rewrite H1 in H. inversion H.
-Defined.
-Next Obligation. split. apply andb_prop_elim. apply andb_prop_intro. Defined.
+Qed.
+Next Obligation. split. apply andb_prop_elim. apply andb_prop_intro. Qed.
 
-Instance trans_refl : Reflexive (fun x y => Is_true (leq3 x y)).
+
+Instance leq3_refl : Reflexive (fun x y => Is_true (leq3 x y)).
   Proof. apply B_PO_ex_obligation_1. Qed.
 
-Instance trans_leq : Transitive (fun x y => Is_true (leq3 x y)).
+Instance leq3_trans : Transitive (fun x y => Is_true (leq3 x y)).
   Proof. apply B_PO_ex_obligation_1. Qed.
+
 
 Lemma weq_is_eq : forall (x y : CPO_set), 
   @weq_in_prop Bool_B CPO_valid_type B_PO_ex x y <-> x = y.
@@ -260,5 +351,22 @@ Definition sup_ex (D :@directed_set Bool_B CPO_valid_type leq3) := if (D x2) the
       rewrite top_of_P0_is_x2 in H0. specialize H0 with x1.
       assert (@is_true Bool_B (leq3 x2 x1)). apply H0. now cbn. inversion H1.
   Qed.
+  
+  
+  
+  (* ----- Testing computation of a minimal fixpoint ----- *)
+
+  Program Definition Fmon : @mon Bool_B CPO_valid_type B_PO_ex := fun x => match x with
+      | bottom => x1
+      | x1 => x1
+      | x2 => x2
+    end.
+
+Goal True.
+set (x := @gfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon).
+simpl in x. unfold sup_ex in x. vm_compute in x.
+(*Eval cbv in @gfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon.*)
+
+(* TODO : montrer que tout ordre partiel FINI est un CPO *)
 
 End CPO_Examples.

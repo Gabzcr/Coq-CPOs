@@ -131,16 +131,16 @@ Section Forall_sets.
   
   #[global]
   Program Definition valid_fun_type := existT K (X -> X) _.
-  Next Obligation. destruct X as [T KT]; cbn. now apply function_closure. Qed.
+  Next Obligation. destruct X as [T KT]; cbn. now apply function_closure. Defined.
   
   #[global]
   Program Definition valid_set_type := existT K (X -> B) _.
-  Next Obligation. destruct X as [T KT]; cbn. now apply set_closure. Qed.
+  Next Obligation. destruct X as [T KT]; cbn. now apply set_closure. Defined.
  
  #[global]
   Program Definition valid_dir_set_type := existT K (directed_set leq) _.
   Next Obligation. destruct X as [T KT]; cbn. apply subtype_closure. cbn.
-  now apply set_closure. Qed.
+  now apply set_closure. Defined.
 
 End Forall_sets.
 
@@ -820,10 +820,12 @@ Section Fixpoints.
     destruct Hz as [hz [Hhz [hzmon [hzinc [hzinv HYz]]]]]. apply H0 with (hz x). apply Hhz. now apply hzinv.
   + apply H. intros x Hx. cbn in Hx. now apply BFalse_spec in Hx.
  Qed.
+ 
+ Definition gfp_II := (sup (fun_on_Y_subCPO (P0 F) bot)).
 
- Theorem Fixpoint_II_no_subCPO : exists x, is_true (Fix F x).
+ Theorem Fixpoint_II_no_subCPO : is_true (Fix F gfp_II).
  Proof.
- exists (sup (fun_on_Y_subCPO (P0 F) bot)). pose proof (P0_is_invariant_subCPO F) as [PI PS].
+ unfold gfp_II. pose proof (P0_is_invariant_subCPO F) as [PI PS].
  assert (is_true ((P0 F) (sup (fun_on_Y_subCPO (P0 F) bot)))).
  rewrite <- is_subCPO_spec in PS.
  apply PS. apply included_spec. cbn. setoid_rewrite <- mon_fun_spec.
