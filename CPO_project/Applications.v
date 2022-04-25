@@ -7,6 +7,7 @@ From Project Require Import FiniteSet.
 From Project Require Import CPO.
 
 Require Import Bool.
+Require Import Coq.Lists.List.
 
 Section TruthValueInstances.
 
@@ -84,6 +85,453 @@ Lemma eqbool_trans {X : Type} {X_fin : fin X} :
   destruct (eq_dec X_fin x y); destruct (eq_dec X_fin y z);
   destruct (eq_dec X_fin x z); try easy.
   contradict n. now rewrite e. Qed.
+
+
+
+
+Section FiniteOrder.
+
+ Context {X : valid_type} {P' : @B_PO Bool_B X}.
+ Variable bottom : X.
+ Hypothesis bottom_is_bot : forall (x : X), is_true (leq bottom x).
+ 
+ Definition incomparable l := forall x y, In x l -> In y l -> (x = y) \/ (~ x <= y /\ ~ y <= x).
+ 
+ Lemma included_stays_incomparable : forall l a, incomparable (a::l) -> incomparable l.
+ Proof. unfold incomparable. intros. apply H; now apply in_cons. Qed.
+ 
+ Fixpoint update_candidates (element : X) (candidates : list X) : (list X) := match candidates with
+  | nil => cons element nil
+  | h :: q => if (leq h element) then update_candidates element q 
+              else if (leq element h) then candidates
+              else h :: (update_candidates element q)
+  end.
+  
+ Lemma update_contains_bigger : forall el cand, exists el0, In el0 (update_candidates el cand) /\ el <= el0.
+ Proof.
+ induction cand.
+ + exists el. split. cbn. now left. reflexivity.
+ + cbn. destruct (leq a el) eqn:EQ1. apply IHcand. destruct (leq el a) eqn:EQ2. exists a.
+  split. apply in_eq. now apply Is_true_eq_left. cbn. destruct IHcand as [x [Hx1 Hx2]].
+  exists x. split. now right. apply Hx2.
+ Qed.
+ 
+ Lemma update_adds_el_and_retrieve_others : forall el l x, In x (update_candidates el l) ->
+  In x l \/ (x = el).
+ Proof. induction l.
+ + cbn. intros. destruct H. now right. now left.
+ + intros. cbn in *. destruct (leq a el). destruct (IHl x). assumption.
+  left. now right. now right. destruct (leq el a). inversion H. left. now left.
+  left. now right. inversion H. left. now left. destruct (IHl x). assumption. left. now right.
+  now right.
+ Qed.
+ 
+ Lemma update_preserves_incomparable : forall el cand, 
+  incomparable cand -> incomparable (update_candidates el cand).
+ Proof.
+  intros el cand Hincomp x y Hx Hy.
+  induction cand. cbn in Hx, Hy. destruct Hx; destruct Hy; try (now intuition).
+  left. rewrite <- H. now rewrite <- H0.
+  cbn in Hx, Hy. destruct (leq a el) eqn:EQ.
+  apply included_stays_incomparable in Hincomp. now apply IHcand.
+  destruct (leq el a) eqn:EQ2. now apply Hincomp.
+  inversion Hx; inversion Hy. left. rewrite <- H. now rewrite <- H0.
+  
+  destruct (update_adds_el_and_retrieve_others el cand y H0).
+  apply Hincomp. rewrite H. apply in_eq. now apply in_cons.
+  rewrite <- H. rewrite H1. right. split;
+  unfold leq_in_prop; intro; apply Is_true_eq_true in H2; contradict H2.
+  now rewrite EQ. now rewrite EQ2.
+  
+  destruct (update_adds_el_and_retrieve_others el cand x H).
+  apply Hincomp. now apply in_cons. rewrite H0. apply in_eq.
+  rewrite <- H0. rewrite H1. right. split;
+  unfold leq_in_prop; intro; apply Is_true_eq_true in H2; contradict H2.
+  now rewrite EQ2. now rewrite EQ.
+  
+  apply IHcand; try assumption. now apply included_stays_incomparable with a.
+ Qed.
+ 
+ Lemma update_preserves_domination : forall el cand x, 
+  (exists y, In y cand /\ x <= y) -> (exists y, In y (update_candidates el cand) /\ x <= y).
+ Proof.
+  induction cand.
+  + intros. destruct H as [y [Hy Hxy]]. contradict Hy.
+  + intros x Hx. destruct Hx as [y [Hy Hxy]]. destruct Hy as [Hy | Hy].
+    - cbn. destruct (leq a el) eqn:EQ.  
+      * destruct (update_contains_bigger el cand) as [s Hs]. destruct Hs as [Hs Hels].
+        exists s. split. assumption. assert (x <= s). rewrite <- Hels. rewrite Hxy. rewrite <- Hy. cbn.
+        apply Is_true_eq_left. apply EQ. apply H.
+      * destruct (leq el a). exists a. split. apply in_eq. rewrite Hy. apply Hxy. 
+        exists a. split. apply in_eq. rewrite Hy. apply Hxy.
+    - cbn in *. destruct (leq a el). apply IHcand. now exists y.
+      destruct (leq el a). exists y. split. now apply in_cons. assumption.
+      destruct (IHcand x) as [s [Hs1 Hs2]]. now exists y.
+      exists s. split. now apply in_cons. assumption.
+ Qed.
+ 
+ Fixpoint list_eq (l1 l2 : list X) := match l1,l2 with
+  | nil, nil => True
+  | nil,_ => False
+  | _, nil => False
+  | (h1::q1), (h2::q2) => (h1 == h2) /\ list_eq q1 q2
+  end.
+ 
+ 
+ Lemma In_update_is_commutative : forall l x y z, 
+  (exists z', In z' (update_candidates x (update_candidates y l)) /\ z <= z') 
+  <-> (exists z', In z' (update_candidates y (update_candidates x l)) /\ z <= z').
+ Proof.
+  induction l.
+  + intros x y z. cbn. destruct (leq x y) eqn:EQxy; destruct (leq y x)eqn:EQyx.
+    - split; intro. exists y. split. apply in_eq. destruct H as [z' [Hz'x Hzz']].
+    inversion Hz'x. rewrite <- H in Hzz'. transitivity x. assumption. now apply Is_true_eq_left.
+    contradict H.
+    exists x. split. apply in_eq. destruct H as [z' [Hz'x Hzz']].
+    inversion Hz'x. rewrite <- H in Hzz'. transitivity x. transitivity y. assumption. now apply Is_true_eq_left.
+    reflexivity. contradict H.
+    - reflexivity.
+    - reflexivity.
+    - split; intro. destruct H as [z' [Hz'1 Hz'2]]. inversion Hz'1. exists y. split. apply in_cons. apply in_eq.
+    now rewrite <- H in Hz'2. inversion H. exists x. split. apply in_eq. now rewrite <- H0 in Hz'2.
+    contradict H0.
+    destruct H as [z' [Hz'1 Hz'2]]. inversion Hz'1. exists x. split. apply in_cons. apply in_eq.
+    now rewrite <- H in Hz'2. inversion H. exists y. split. apply in_eq. now rewrite <- H0 in Hz'2.
+    contradict H0.
+  + intros. split; intro.
+    - destruct H as [z' [Hz' Hzz']]. apply update_adds_el_and_retrieve_others in Hz'.
+      destruct Hz' as [Hz' | Hz']. apply update_adds_el_and_retrieve_others in Hz'. destruct Hz'.
+      repeat apply update_preserves_domination. now exists z'.
+      destruct (update_contains_bigger y (update_candidates x (a :: l))) as [z'0 [Hz'0 Hyz'0]].
+      exists z'0. split. assumption. rewrite <- Hyz'0. rewrite Hzz'. now rewrite H.
+      apply update_preserves_domination.
+      destruct (update_contains_bigger x (a :: l)) as [z'0 [Hz'0 Hyz'0]].
+      exists z'0. split. assumption. rewrite <- Hyz'0. rewrite Hzz'. now rewrite Hz'.
+    - destruct H as [z' [Hz' Hzz']]. apply update_adds_el_and_retrieve_others in Hz'.
+      destruct Hz' as [Hz' | Hz']. apply update_adds_el_and_retrieve_others in Hz'. destruct Hz'.
+      repeat apply update_preserves_domination. now exists z'.
+      destruct (update_contains_bigger x (update_candidates y (a :: l))) as [z'0 [Hz'0 Hyz'0]].
+      exists z'0. split. assumption. rewrite <- Hyz'0. rewrite Hzz'. now rewrite H.
+      apply update_preserves_domination.
+      destruct (update_contains_bigger y (a :: l)) as [z'0 [Hz'0 Hyz'0]].
+      exists z'0. split. assumption. rewrite <- Hyz'0. rewrite Hzz'. now rewrite Hz'.
+  Qed.
+    
+  
+  (*
+   cbn. destruct (leq a y) eqn:EQay.
+    - destruct (leq a x)eqn:EQax. cbn in IHl. apply IHl.
+      destruct (leq x a) eqn:EQxa. split. intro.
+    
+    
+    apply Is_true_eq_left in EQxy, EQyx. cbn. split.
+    assert (is_true (weq x y)). apply weq_spec. now split. apply H. easy.
+    cbn. now split.
+    destruct (leq y x)eqn:EQyx. cbn. now split.
+*)
+ 
+ Fixpoint build_sup_candidate_aux (D : X -> bool) el_list candidates : (list X) := match el_list with
+  | nil => candidates
+  | h :: q => if (D h) then build_sup_candidate_aux D q (update_candidates h candidates)
+            else build_sup_candidate_aux D q candidates
+   end.
+  
+ (* TODO *)
+ 
+ Program Definition build_sup_candidate (D : X -> bool) :=
+  build_sup_candidate_aux D (el (projT2 X)) nil (*(cons bottom nil)*).
+
+ Lemma test0 D : forall lst cand x, Is_true (D x) -> (*In x cand -> *)
+  (exists y, In y cand /\ x <= y) ->
+  exists y, In y (build_sup_candidate_aux D lst cand) /\ x <= y.
+ Proof.
+  induction lst.
+  + intros cand x Dx Hx. cbn. apply Hx.
+  + intros cand x Dx Hx. cbn in *. destruct (D a) eqn:EQ.
+    - apply IHlst. assumption. pose proof update_preserves_domination. cbn in H. now apply H.
+    - now apply IHlst.
+ Qed.
+
+(*
+   Lemma test0' D : forall lst cand x, Is_true (D x) -> (*In x cand -> *)
+  (exists y, In y (build_sup_candidate_aux D lst cand) /\ x <= y) ->
+  (exists y, In y cand /\ x <= y).
+ Proof.
+  induction lst.
+  + intros. cbn. apply H0.
+  + intros cand x Dx Hx. cbn in *. destruct (D a) eqn:EQ.
+    - apply IHlst. assumption. pose proof (update_preserves_domination a cand x). apply H in Hx. cbn in H. apply H.
+    - now apply IHlst.
+ Qed.
+*)
+
+  Lemma build_sup_candidate_aux_preserves_property D lst x : forall cand1 cand2,
+    ((exists y, In y cand1 /\ x <= y) <-> (exists y, In y cand2 /\ x <= y)) ->
+    (exists y, In y (build_sup_candidate_aux D lst cand1) /\ x <= y) 
+      <-> (exists y, In y (build_sup_candidate_aux D lst cand2) /\ x <= y).
+  Proof.
+    induction lst.
+    + intros. cbn in *. apply H.
+    + intros.
+      cbn in *. destruct (D a).
+      - apply IHlst. split; intros [z [Hz Hxz]].
+        * pose proof update_adds_el_and_retrieve_others as InvUpdate.
+          apply (InvUpdate a cand1 z) in Hz. destruct Hz.
+          pose proof update_preserves_domination as Dom. cbn in Dom. apply Dom.
+          apply H. now exists z. destruct update_contains_bigger with a cand2 as [a' [Ha' Haa']].
+          exists a'. split. assumption. transitivity a. now rewrite <- H0. apply Haa'.
+        * pose proof update_adds_el_and_retrieve_others as InvUpdate.
+          apply (InvUpdate a cand2 z) in Hz. destruct Hz.
+          pose proof update_preserves_domination as Dom. cbn in Dom. apply Dom.
+          apply H. now exists z. destruct update_contains_bigger with a cand1 as [a' [Ha' Haa']].
+          exists a'. split. assumption. transitivity a. now rewrite <- H0. apply Haa'.
+      - now apply IHlst.
+  Qed.
+
+
+(*
+Lemma test1' D : forall lst cand x f, (forall l z, In z l  -> In z (f l))
+  -> (exists y, In y (build_sup_candidate_aux D lst cand) /\ x <= y)
+  -> (exists y, In y (build_sup_candidate_aux D lst (f cand)) /\ x <= y).
+ Proof.
+  intros. destruct H0 as [y [Hy Hxy]].
+  
+  
+   induction lst.
+  + cbn in *. exists y. split. now right. assumption.
+  +
+*)
+
+ Lemma test3 : forall x y cand, (~ x <= y /\ ~ y <= x) -> (In x cand <-> In x (update_candidates y cand)).
+ Proof.
+  intros. induction cand.
+  + cbn. split; intro. contradict H0. destruct H0. destruct H. contradict H. now rewrite H0. assumption.
+  + split; intro.
+    - inversion H0.
+      * cbn. destruct (leq a y) eqn:EQ. destruct H as [Hxy Hyx]. contradict Hxy.
+        rewrite H1 in EQ. now apply Is_true_eq_left. destruct (leq y a) eqn:EQ2. assumption. rewrite H1. apply in_eq.
+      * cbn. destruct (leq a y) eqn:EQ. now apply IHcand.
+        destruct (leq y a)eqn:EQ2. assumption. apply in_cons. now apply IHcand.
+    - cbn in H0. destruct (leq a y). apply in_cons. now apply IHcand. destruct (leq y a). assumption.
+      inversion H0. rewrite H1. apply in_eq. apply in_cons. now apply IHcand.
+ Qed.
+    
+ (*
+ Lemma test2 D : forall lst cand x y, (~ x <= y /\ ~ y <= x) -> 
+  (exists z, In z (build_sup_candidate_aux D lst (update_candidates y cand)) /\ x <= z)
+  -> exists z, In z (build_sup_candidate_aux D lst cand) /\ x <= z.
+ Proof.
+  induction lst.
+  + intros. cbn in H0. cbn. destruct H0 as [z [Hz Hxz]]. exists z. pose proof (test3 z y cand).
+    split. rewrite H0. assumption. split. intro. destruct H. contradict H. rewrite <- H1. apply Hxz. intro.
+    destruct H. contradict H1. (*
+  + intros. cbn. cbn in H0. destruct (D a).
+  
+    assert (forall l, (update_candidates a (update_candidates y l)) = (update_candidates y (update_candidates a l))).
+    admit.
+    rewrite H1 in H0. apply IHlst with y. apply H. assumption. apply IHlst with y. apply H. assumption.*)
+  Admitted.*)
+  
+ Lemma test2' D : forall lst cand x y,
+  (exists z, In z (build_sup_candidate_aux D lst (update_candidates y cand)) /\ x <= z)
+  -> exists z, (In z (build_sup_candidate_aux D lst cand) \/ z <= y) /\ x <= z.
+  Proof.
+    induction lst.
+    + intros. cbn in *. induction cand. 
+      - cbn in *. destruct H as [z Hz]. exists z. destruct Hz. destruct H. split. right. now rewrite H. assumption.
+        contradict H.
+      - cbn in *. destruct (leq a y) eqn:EQay.
+        * destruct IHcand as [z Hz]. apply H.
+          destruct Hz. destruct H0. exists z. split. left. now right. assumption.
+          exists y. split. now right. now transitivity z.
+        * destruct (leq y a); destruct H as [z [Hz Hxz]]; inversion Hz.
+          exists z. split. left. now left. assumption.
+          exists z. split. left. now right. assumption.
+          exists z. split. left. now left. assumption.
+          destruct IHcand as [s [Hs Hxs]]. now exists z. exists s. split.
+          destruct Hs. left. now right. now right. assumption.
+    + intros. cbn in *. destruct (D a) eqn:EQDa.
+      * apply IHlst.
+        pose proof build_sup_candidate_aux_preserves_property as RW. 
+        specialize RW with D lst x (update_candidates y (update_candidates a cand)) 
+                                   (update_candidates a (update_candidates y cand)).
+        apply RW. apply In_update_is_commutative. clear RW. apply H.
+      * apply IHlst. apply H.
+  Qed.
+
+
+ Lemma test1 D : forall lst cand x a, Is_true (D x) -> Is_true (D a) ->
+  (exists y, In y (build_sup_candidate_aux D lst cand) /\ x <= y)
+  -> exists y, In y (build_sup_candidate_aux D lst (a::cand)) /\ x <= y.
+ Proof.
+  induction lst.
+  - intros. cbn in *. destruct H1 as [y Hy]. exists y. split. now right. apply Hy.
+  - intros. cbn in *. destruct H1 as [y Hy]. destruct (D a) eqn:EQDa.
+    * destruct (leq a a0) eqn:EQ1.
+      ** destruct (leq a0 a) eqn:EQ2.
+        *** exists y. now split.
+        *** assert (exists z : X, (In z (build_sup_candidate_aux D lst cand) \/ z <= a) /\ x <= z).
+            apply test2'. exists y. apply Hy.
+            destruct H1 as [z [Hz Hxz]]. destruct Hz. apply IHlst; try assumption. now exists z.
+      
+            pose proof (test0 D lst (a0::cand) x H). destruct H2 as [s [Hs Hxs]]. exists a0. split. apply in_eq.
+            rewrite Hxz. rewrite H1. now apply Is_true_eq_left.
+            now exists s.
+      ** destruct (leq a0 a) eqn:EQ2.
+        *** exists y. now split.
+        *** apply IHlst; try assumption. exists y. now split.
+    * apply IHlst; try assumption. exists y. now split.
+ Qed.
+    
+    (*
+    exists a0. split. pose proof test0. apply test0.
+    
+    
+    exists y. now split.
+    destruct (leq a0 a) eqn:EQ2. apply IHlst.
+ 
+ 
+ 
+  intros. destruct H1 as [y [Hy Hxy]]. destruct (leq y a) eqn:EQ.
+  + destruct (test0 D lst (a::cand) a) as [z Hz]. assumption. exists a.
+    split. apply in_eq. reflexivity.
+    exists z. split. apply Hz. destruct Hz as [_ Hz]. rewrite <- Hz. rewrite Hxy.
+    now apply Is_true_eq_left.
+  
+  + assert (exists y, In y (build_sup_candidate_aux D lst cand) /\ x <= y).
+    now exists y. clear Hy. clear Hxy. clear EQ. clear y.
+    induction lst.
+    - cbn in *. destruct H1 as [y Hy]. exists y. split. now right. apply Hy.
+    - cbn in *. destruct H1 as [y Hy]. destruct (D a0). destruct (leq a a0) eqn:EQ1.
+      destruct (leq a0 a) eqn:EQ2. exists y. now split.
+      exists y. now split.
+      destruct (leq a0 a) eqn:EQ2. apply IHlst.
+  Admitted.*)
+      (*TODO*)
+    
+    (*
+  + exists y. split; try assumption. induction lst.
+    - cbn in *. now right.
+    - cbn in *. destruct (D a0). destruct (leq a a0) eqn:EQ1. apply Hy.
+      destruct (leq a0 a) eqn:EQ2. apply IHlst. (*apply Hy*)
+      *)
+    (*
+    induction lst.
+  + cbn in *. exists y. split. now right. assumption.
+  + cbn in *. destruct (D a0) eqn:EQ. destruct (leq a a0) eqn:EQ1. now exists y.
+    destruct (leq a0 a). apply IHlst. admit. (*TODO false here, change condition*) *)
+
+
+Lemma invariant D : forall lst x, Is_true (D x) 
+  -> ~ (In x lst) 
+    \/ exists y, In y (build_sup_candidate_aux D lst nil) /\ x <= y.
+Proof.
+  induction lst.
+  + intros. now left.
+  + intros x Dx. pose proof (IHlst x Dx). apply Is_true_eq_true in Dx. destruct H.
+    - destruct (eq_dec (projT2 X) a x).
+      * right. cbn. destruct (D a) eqn:EQ. pose proof test0. cbn in H0. apply H0.
+        now apply Is_true_eq_left. exists a. split. apply in_eq. rewrite e. reflexivity.
+        rewrite e in EQ. contradict Dx. now rewrite EQ.
+      * left. intro. inversion H0; now contradict H1.
+    - right. cbn. destruct (D a) eqn:EQ.
+      * pose proof test1. cbn in H0. apply H0; try (now apply Is_true_eq_left). assumption.
+      * apply H.
+  Qed.
+
+(*
+Lemma invariant D lst cand : (forall x, Is_true (D x) -> In x lst \/ exists y, In y cand /\ x <= y)
+  -> (forall x, Is_true (D x) -> exists y, In y (build_sup_candidate_aux D lst cand) /\ x <= y).
+ Proof.
+  intro H. induction lst.
+  + intros x Dx. cbn. destruct (H x). assumption. contradict H0. assumption.
+  + intros x Dx. destruct (H x). assumption. admit.
+    cbn. destru 
+    
+    
+  induction lst.
+  + intros H x Dx. cbn. destruct (H x). assumption. contradict H0. assumption.
+  + intros H x Dx. destruct (H x). assumption. admit.
+    cbn. destru 
+*)
+
+(*
+Lemma invariant D (* build sup aux preserves this property : *): forall a lst cand, forall x, Is_true (D a) ->
+  (In x lst -> (exists d, In d (build_sup_candidate_aux D lst cand) /\ x <= d))
+  -> (In x (a::lst) -> (exists d, In d (build_sup_candidate_aux D (a::lst) (update_candidates a cand)) /\ x <= d)).
+ Proof.
+  intros. cbn. destruct (D a).
+  
+  contradict H.
+ Qed.
+*)
+
+
+(*
+Lemma invariant D : forall lst x, In x lst -> (exists d, In d (build_sup_candidate_aux D lst nil) /\ x <= d).
+Proof.
+  induction lst.
+  + intros. contradict H.
+  + intros x Hx. inversion Hx. cbn.
+    destruct (D a). destruct (update_contains_bigger a (a::nil)).
+    exists x0. rewrite <- H. split. cbn.
+  
+    destruct (IHlst x H) as [d [HDlst Hxd]]. exists d. split.
+    - cbn. destruct (D a). admit.
+      (* TODO : lemme, l1 inclus dans l2 implique que build_sup l1 inclus and build_sup l2*)
+       assumption.
+    - assumption.
+Qed.*)
+
+(*
+ Lemma build_sup_contains_maximal_elements D :
+  forall lst cand (d : X), 
+    (forall d', In d' cand -> (forall x, Is_true (D x) -> (x <= d' \/ In x lst))) ->
+    In d (build_sup_candidate_aux D lst cand) -> 
+    (forall x, Is_true (D x) -> (x <= d \/ In x lst)).
+ Proof.
+   induction lst.
+   + intros. cbn in *. now apply H.
+   + intros. 
+ 
+ 
+ 
+  induction lst.
+  + intros. cbn in H. contradict H.
+  +
+  
+ 
+  unfold build_sup_candidate. induction (el (projT2 X)) eqn:EQ.
+  + intros. contradict H.
+  + assert (forall lst cand d, In d (build_sup_candidate_aux D lst cand) 
+    -> (forall x, Is_true (D x) -> x <= d \/ In x lst)).
+*)
+
+(*
+ Lemma build_sup_contains_sup (D : directed_set leq) : 
+  forall (d x : X), List.In d (build_sup_candidate D) -> is_true (D x) -> is_true (leq x d).
+ Proof.
+  unfold build_sup_candidate. induction (el (projT2 X)).
+  + intros. contradict H.
+  + intros d x Hd. cbn in Hd. destruct (D a) eqn:EQ.
+    induction l.
+    - cbn in *. destruct Hd. rewrite H.
+    unfold build_sup_candidate_1_step in Hd.
+*)
+
+(* TODO : montrer que la tête de la liste des candidats sup est bien un sup (i.e. tout le monde est sous lui) *)
+
+Program Definition FinitePO_to_CPO : @B_CPO Bool_B X P' :=
+  {| 
+     sup D := hd bottom (build_sup_candidate D);
+  |}.
+Next Obligation.
+  pose proof (invariant D (el (projT2 X))) as Hsup.
+  split; intro H.
+  + intros y Dy.
+
+
+End FiniteOrder.
 
 
 
@@ -364,7 +812,7 @@ Definition sup_ex (D :@directed_set Bool_B CPO_valid_type leq3) := if (D x2) the
 
 Goal True.
 set (x := @lfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon).
-simpl in x. unfold sup_ex in x. vm_compute in x.
+(*simpl in x. unfold sup_ex in x.*) vm_compute in x.
 (*Eval cbv in @gfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon.*)
 
 (* TODO : montrer que tout ordre partiel FINI est un CPO *)

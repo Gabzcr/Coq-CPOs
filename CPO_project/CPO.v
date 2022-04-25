@@ -620,7 +620,7 @@ Program Instance B_CPO_fun {A : valid_type} : B_CPO (@B_PO_fun A) :=
   {|
     sup G := fun x => sup (fun y => BExists (@valid_gfun_type A) (fun f => BAnd (G f) (weq y (f x))));
   |}.
-  Next Obligation. 
+  Next Obligation.
   apply Directed_spec. repeat setoid_rewrite <- BExists_spec.
     intros. destruct G as [SF D]; cbn in *. setoid_rewrite <- Directed_spec in D.
     destruct H as [fx Hfx]. destruct H0 as [fy Hfy]. rewrite <- BAnd_spec in Hfx, Hfy.
@@ -760,6 +760,7 @@ Section Fixpoints.
   Definition is_inf S x := forall z, (forall y, is_true (S y) -> z <= y) <-> z <= x.
   Definition is_minimal S x := is_true (S x) /\ forall y, is_true (S y) -> y <= x -> y == x.
   Definition is_greatest S x := is_true (S x) /\ forall y, is_true (S y) -> y <= x.
+  Definition is_maximal S x := is_true (S x) /\ forall y, is_true (S y) -> x <= y -> y == x.
   Definition is_sup S x := forall z, (forall y, is_true (S y) -> y <= z) <-> x <= z.
 
 (*
