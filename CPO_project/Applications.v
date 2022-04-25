@@ -48,8 +48,8 @@ Next Obligation. destruct a. now left. right. now left. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. exists (el (@funP A X P)). apply (eq_dec (@funP A X P)).
    apply (all_el (@funP A X P)). Defined.
-  Next Obligation. exists (el (@funAB A A X X)). apply (eq_dec (@funAB A A X X)).
-   apply (all_el (@funAB A A X X)). Defined.
+  Next Obligation. exists (el (@funAB A B X X0)). apply (eq_dec (@funAB A B X X0)).
+   apply (all_el (@funAB A B X X0)). Defined.
   Next Obligation. exists (el (@funAbool A X)). apply (eq_dec (@funAbool A X)).
    apply (all_el (@funAbool A X)). Defined.
   Next Obligation.
@@ -363,7 +363,7 @@ Definition sup_ex (D :@directed_set Bool_B CPO_valid_type leq3) := if (D x2) the
     end.
 
 Goal True.
-set (x := @gfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon).
+set (x := @lfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon).
 simpl in x. unfold sup_ex in x. vm_compute in x.
 (*Eval cbv in @gfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon.*)
 

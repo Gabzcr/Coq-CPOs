@@ -24,7 +24,7 @@ Class B_param := { B : Type;
   
   (* Closure properties on K *)
   subtype_closure (A : Type) : K A -> forall (P : A -> B), K {a : A | is_true (P a)}; (* for Forall on directed sets*)
-  function_closure (A : Type) : K A -> K (A -> A);
+  function_closure (A B : Type) : K A -> K B -> K (A -> B);
   set_closure (A : Type) : K A -> K (A -> B);
 
   (* Forall and Exists :*)
@@ -428,6 +428,8 @@ Infix "⊆" := included_prop (at level 70).
 Section Particular_CPOs.
 
  Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {P : B_CPO P'}.
+
+ (** * CPO of monotonous functions in X -> X. *)
  
  #[global]
   Program Definition valid_mon_type := existT K (mon) _.
@@ -551,6 +553,7 @@ Donc il faut que l'ensemble des fonctions monotones soit aussi un type valide. C
       now apply Ds.
    Qed.
 
+
 (** * sub-CPO : Define a set (part of X) as being a CPO *)
 
   Definition is_subCPO (Y : X -> B) :=   
@@ -584,6 +587,64 @@ Donc il faut que l'ensemble des fonctions monotones soit aussi un type valide. C
     intros f g H x. apply BEq_spec. apply weq_spec in H.
     unfold leq_in_prop in *; cbn in *. setoid_rewrite included_spec in H. intuition.
   Qed.
+
+
+(** * More generally, CPO A -> X when A is a valid type and X is a CPO *)
+
+#[global]
+  Program Definition valid_gfun_type {A : valid_type} := existT K (A->X) _.
+  Next Obligation. destruct X as [TX KTX]; cbn. destruct A as [TA KTA]; cbn.
+    now apply function_closure. Defined.
+
+
+ Program Instance B_PO_fun `{A : valid_type} : @B_PO B (@valid_gfun_type A) :=
+    {|
+      weq f g := BForall A (fun (x:A) => weq (f x) (g x));
+      leq f g := BForall A (fun (x:A) => leq (f x) (g x));
+    |}.
+  Next Obligation.
+  apply Build_PreOrder.
+    + intro x. apply BForall_spec. intro. fold_leq. reflexivity.
+    + intros f g h Hfg Hgh. apply BForall_spec. intro x. fold_leq.
+      rewrite <- BForall_spec in Hfg, Hgh.
+      transitivity (g x). apply Hfg. apply Hgh.
+  Qed.
+  Next Obligation.
+    setoid_rewrite <- BForall_spec.
+    split; intros.
+    + split; intro a; apply weq_spec. symmetry; apply H. apply H.
+    + apply weq_spec. split; apply H.
+  Qed.
+  
+Program Instance B_CPO_fun {A : valid_type} : B_CPO (@B_PO_fun A) :=
+  {|
+    sup G := fun x => sup (fun y => BExists (@valid_gfun_type A) (fun f => BAnd (G f) (weq y (f x))));
+  |}.
+  Next Obligation. 
+  apply Directed_spec. repeat setoid_rewrite <- BExists_spec.
+    intros. destruct G as [SF D]; cbn in *. setoid_rewrite <- Directed_spec in D.
+    destruct H as [fx Hfx]. destruct H0 as [fy Hfy]. rewrite <- BAnd_spec in Hfx, Hfy.
+    destruct Hfx as [Hfx Eqfx]. destruct Hfy as [Hfy Eqfy].
+    destruct (D fx fy) as [f [Hf1S [Hff1 Hff2]]]; try assumption. unfold valid_gfun_type in f. cbn in *.
+    exists (f x). unfold leq_in_prop in Hff1, Hff2. cbn in *. rewrite <- BForall_spec in Hff1, Hff2.
+    repeat split. exists f. apply BAnd_spec. split. 
+    assumption. fold_weq. reflexivity.
+                                 + fold (leq_in_prop x0 (f x)). transitivity (fx x).
+                                   apply weq_spec in Eqfx. apply Eqfx. apply (Hff1 x).
+                                 + fold (leq_in_prop y (f x)). transitivity (fy x).
+                                   apply weq_spec in Eqfy. apply Eqfy. apply (Hff2 x).
+  Qed.
+  Next Obligation.
+    destruct D as [SF D]; cbn in *. split.
+    + intros H f Df. unfold leq_in_prop in *. cbn in *. rewrite <- BForall_spec in *. intro x.
+      fold_leq. rewrite <- H.
+      eapply sup_spec. reflexivity. cbn. apply BExists_spec. exists f. apply BAnd_spec. split. assumption.
+      now fold_weq.
+    + intro H. unfold leq_in_prop. cbn. apply BForall_spec. intro x. apply sup_spec. cbn. intros y Hy.
+      rewrite <- BExists_spec in Hy. destruct Hy as [f Hf]. apply BAnd_spec in Hf. destruct Hf as [Hf Eqyfx].
+      rewrite Eqyfx. unfold leq_in_prop in H. cbn in H. setoid_rewrite <- BForall_spec in H. now apply (H f).
+  Qed.
+
 
 End Particular_CPOs.
 
@@ -821,11 +882,11 @@ Section Fixpoints.
   + apply H. intros x Hx. cbn in Hx. now apply BFalse_spec in Hx.
  Qed.
  
- Definition gfp_II := (sup (fun_on_Y_subCPO (P0 F) bot)).
+ Definition lfp_II := (sup (fun_on_Y_subCPO (P0 F) bot)).
 
- Theorem Fixpoint_II_no_subCPO : is_true (Fix F gfp_II).
+ Theorem Fixpoint_II_no_subCPO : is_true (Fix F lfp_II).
  Proof.
- unfold gfp_II. pose proof (P0_is_invariant_subCPO F) as [PI PS].
+ unfold lfp_II. pose proof (P0_is_invariant_subCPO F) as [PI PS].
  assert (is_true ((P0 F) (sup (fun_on_Y_subCPO (P0 F) bot)))).
  rewrite <- is_subCPO_spec in PS.
  apply PS. apply included_spec. cbn. setoid_rewrite <- mon_fun_spec.
