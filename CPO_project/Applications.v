@@ -107,6 +107,19 @@ Section FiniteOrder.
               else h :: (update_candidates element q)
   end.
   
+   Fixpoint build_sup_candidate_aux (D : X -> bool) el_list candidates : (list X) := match el_list with
+  | nil => candidates
+  | h :: q => if (D h) then build_sup_candidate_aux D q (update_candidates h candidates)
+            else build_sup_candidate_aux D q candidates
+   end.
+  
+ (* TODO *)
+ 
+ Program Definition build_sup_candidate (D : X -> bool) :=
+  build_sup_candidate_aux D (el (projT2 X)) nil (*(cons bottom nil)*).
+  
+  
+  
  Lemma update_contains_bigger : forall el cand, exists el0, In el0 (update_candidates el cand) /\ el <= el0.
  Proof.
  induction cand.
@@ -230,16 +243,7 @@ Section FiniteOrder.
     destruct (leq y x)eqn:EQyx. cbn. now split.
 *)
  
- Fixpoint build_sup_candidate_aux (D : X -> bool) el_list candidates : (list X) := match el_list with
-  | nil => candidates
-  | h :: q => if (D h) then build_sup_candidate_aux D q (update_candidates h candidates)
-            else build_sup_candidate_aux D q candidates
-   end.
-  
- (* TODO *)
- 
- Program Definition build_sup_candidate (D : X -> bool) :=
-  build_sup_candidate_aux D (el (projT2 X)) nil (*(cons bottom nil)*).
+
 
  Lemma test0 D : forall lst cand x, Is_true (D x) -> (*In x cand -> *)
   (exists y, In y cand /\ x <= y) ->
@@ -439,6 +443,13 @@ Proof.
       * apply H.
   Qed.
 
+Lemma candidates_dominate_D D : forall x, Is_true (D x) -> exists y, In y (build_sup_candidate D) /\ x <= y.
+ Proof.
+  intros x Hx. destruct (invariant D (el (projT2 X)) x). assumption. contradict H. apply (all_el (projT2 X)).
+  apply H.
+ Qed.
+  
+
 (*
 Lemma invariant D lst cand : (forall x, Is_true (D x) -> In x lst \/ exists y, In y cand /\ x <= y)
   -> (forall x, Is_true (D x) -> exists y, In y (build_sup_candidate_aux D lst cand) /\ x <= y).
@@ -519,6 +530,96 @@ Qed.*)
     unfold build_sup_candidate_1_step in Hd.
 *)
 
+
+
+
+Lemma aux_preserves_incomparable D lst cand : 
+  incomparable cand -> incomparable (build_sup_candidate_aux D lst cand).
+ Proof.
+  revert cand. induction lst.
+  + intros cand H. now cbn.
+  + intros cand H. cbn. destruct (D a). apply IHlst. now apply update_preserves_incomparable.
+    now apply IHlst.
+ Qed.
+
+
+Lemma candidates_are_incomparable D : incomparable (build_sup_candidate D).
+Proof. unfold build_sup_candidate. now apply aux_preserves_incomparable. Qed.
+
+Lemma candidates_are_in_D_aux D cand lst : (forall x, In x cand -> Is_true (D x)) ->
+  forall x, In x (build_sup_candidate_aux D lst cand) -> Is_true (D x).
+ Proof.
+  revert cand. induction lst. intro. unfold build_sup_candidate.
+  + now cbn.
+  + cbn. destruct (D a) eqn:EQDa. 
+    - intros. apply IHlst with (update_candidates a cand).
+      intros x0 Hx0. apply update_adds_el_and_retrieve_others in Hx0. destruct Hx0. now apply H.
+      rewrite H1. now apply Is_true_eq_left. assumption.
+     - apply IHlst.
+  Qed.
+
+Lemma candidates_are_in_D D : forall x, In x (build_sup_candidate D) -> Is_true (D x).
+Proof.
+  apply candidates_are_in_D_aux. now cbn.
+ Qed.
+
+Lemma update_preserves_NoDup : forall a cand, NoDup cand -> NoDup (update_candidates a cand).
+Proof.
+  induction cand.
+  + cbn. intro. now constructor.
+  + intro. cbn. destruct (leq a0 a) eqn:EQa0a.
+    - apply NoDup_cons_iff in H. destruct H. now apply IHcand.
+    - destruct (leq a a0). assumption. apply NoDup_cons_iff in H. destruct H. constructor.
+      intro. apply update_adds_el_and_retrieve_others in H1. destruct H1. now contradict H1.
+      rewrite H1 in EQa0a. contradict EQa0a. assert (leq a a = true). apply Is_true_eq_true. reflexivity.
+      now rewrite H2.
+      now apply IHcand.
+  Qed.
+
+
+Lemma candidates_have_no_duplicate_aux D cand lst : 
+  NoDup cand -> NoDup (build_sup_candidate_aux D lst cand).
+ Proof.
+  revert cand. induction lst. intro. unfold build_sup_candidate.
+  + now cbn.
+  + cbn. destruct (D a) eqn:EQDa. 
+    - intros. apply IHlst. now apply update_preserves_NoDup.
+     - apply IHlst.
+  Qed.
+
+Lemma candidates_have_no_duplicate D : NoDup (build_sup_candidate D).
+Proof. apply candidates_have_no_duplicate_aux. constructor. Qed.
+  
+
+Lemma unique_candidate_if_directed D : is_true (Directed leq D) -> le (length (build_sup_candidate D)) 1.
+Proof.
+  intro HD.
+  destruct (build_sup_candidate D) eqn:Sl. cbn. lia.
+  destruct l eqn:Sl'. cbn. lia. exfalso.
+  rewrite <- Directed_spec in HD. destruct (HD t t0) as [d [Hd [Htd Ht0d]]].
+  apply candidates_are_in_D. rewrite Sl. apply in_eq.
+  apply candidates_are_in_D. rewrite Sl. apply in_cons. apply in_eq.
+  
+  destruct (candidates_dominate_D D d) as [s [Hs Hds]]. assumption.
+  
+  destruct (candidates_are_incomparable D t t0) as [Htt0 | Htt0].
+  rewrite Sl. apply in_eq. rewrite Sl. apply in_cons. apply in_eq.
+  rewrite Htt0 in Sl. pose proof (candidates_have_no_duplicate D) as HF.
+  rewrite Sl in HF. apply NoDup_cons_iff in HF. destruct HF as [HF _]. contradict HF. apply in_eq.
+  
+  rewrite Sl in Hs.  destruct Htt0 as [Htt0 Ht0t]. inversion Hs.
+  contradict Ht0t. rewrite H. rewrite <- Hds. apply Ht0d.
+  inversion H. contradict Htt0. rewrite H0. rewrite <- Hds. apply Htd.  
+  
+  destruct (candidates_are_incomparable D t s) as [Hts | Hts].
+  rewrite Sl. apply in_eq. rewrite Sl. assumption.
+  pose proof (candidates_have_no_duplicate D) as HF.
+  rewrite Sl in HF. apply NoDup_cons_iff in HF. destruct HF as [HF _]. contradict HF.
+  rewrite Hts. now apply in_cons.
+  destruct Hts as [Hts Hst]. contradict Hts. rewrite <- Hds. apply Htd.
+ Qed.
+
+
 (* TODO : montrer que la tête de la liste des candidats sup est bien un sup (i.e. tout le monde est sous lui) *)
 
 Program Definition FinitePO_to_CPO : @B_CPO Bool_B X P' :=
@@ -526,10 +627,15 @@ Program Definition FinitePO_to_CPO : @B_CPO Bool_B X P' :=
      sup D := hd bottom (build_sup_candidate D);
   |}.
 Next Obligation.
-  pose proof (invariant D (el (projT2 X))) as Hsup.
-  split; intro H.
-  + intros y Dy.
-
+  pose proof (unique_candidate_if_directed D (proj2_sig D)) as HL. destruct (build_sup_candidate D) eqn:Sl.
+  + split; intros. destruct (candidates_dominate_D D y) as [d [Hd Hyd]]. assumption. rewrite Sl in Hd. contradict Hd.
+    cbn. apply bottom_is_bot.
+  + destruct l. cbn in *. split; intros.
+    - destruct (candidates_dominate_D D y) as [sup [Hsup Hysup]]. assumption.
+      rewrite Sl in Hsup. inversion Hsup. transitivity t. rewrite H1. apply Hysup. apply H. contradict H1.
+    - apply H. apply candidates_are_in_D. rewrite Sl. apply in_eq.
+    - contradict HL. cbn. lia.
+ Qed.
 
 End FiniteOrder.
 
