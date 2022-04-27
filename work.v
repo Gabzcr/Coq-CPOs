@@ -854,9 +854,7 @@ we can't just define our fixpoint as below :
 Program Definition top_P0 (F':X -> X) (H : Increasing F') := (sup (exist _ (P0 F') _)).
 Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
 
-  (*The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper and in work_prop.v)
-However, from an existing fix point, it seems we can deduce a minimal fix point since the set of
-fixpoints between bottom and our fix point is a chain. *)
+  (* The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper and in work_prop.v) *)
   Theorem Fixpoint_III (F' : X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x (*is_minimal (Fix F') x*).
   Proof.
     intros EM Fp HF. exists (sup (exist _ (P0 F') (P0_is_directed EM Fp HF))).
@@ -865,7 +863,7 @@ fixpoints between bottom and our fix point is a chain. *)
     apply sup_spec; cbn. intros. rewrite <- HF. now apply leq_xsup.
   Qed.
 
-
+End Bourbaki_Witt.
 
 (* Attempt at adapting proof from coinduction.v *)
 (*
@@ -918,7 +916,7 @@ Lemma Sflat s (Hs : S s): s == sup (exist _ (fun t => S t /\ t <= s) (directed_l
 
 *)
 
-End Bourbaki_Witt.
+
 
 
 

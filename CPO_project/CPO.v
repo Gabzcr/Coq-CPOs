@@ -298,6 +298,8 @@ Section function.
   split; apply Fmon; now apply weq_spec in Hxy. Qed.
 
   Definition Image f (S : X -> B) y := (BExists X (fun x => BAnd (S x) (weq y (f x)))).
+  Lemma Image_spec f S y : (exists x, is_true (S x) /\ y == (f x)) <-> is_true (Image f S y).
+  Proof. unfold_spec. tauto. Qed.
 
   Definition Continuous f :=
     forall (D : X -> B) (H : is_true (Directed leq D)),
@@ -574,18 +576,18 @@ Donc il faut que l'ensemble des fonctions monotones soit aussi un type valide. C
 
   (* Some instances that can now be defined on CPO_parts and CPO_mon. *)
 
+   Lemma set_equivalent : forall (f g : X -> B), f == g -> (pointwise_relation X BEq_in_prop) f g.
+  Proof.
+    intros f g H x. apply BEq_spec. apply weq_spec in H.
+    unfold leq_in_prop in *; cbn in *. setoid_rewrite included_spec in H. intuition.
+  Qed.
+
   Variable F : X -> X.
 
   #[global] Instance set_incl : Proper (@weq_in_prop B valid_set_type B_PO_parts ==> weq_in_prop ==> BEq_in_prop) included.
   Proof. intros Y1 Y2 H12 Y3 Y4 H34. apply BEq_spec. setoid_rewrite included_spec.
    apply weq_spec in H12, H34. destruct H12 as [H12 H21]. destruct H34 as [H34 H43].
    unfold leq_in_prop in *; cbn in *. rewrite included_spec in H12, H21, H34, H43. intuition.
-  Qed.
-
-  Lemma set_equivalent : forall (f g : X -> B), f == g -> (pointwise_relation X BEq_in_prop) f g.
-  Proof.
-    intros f g H x. apply BEq_spec. apply weq_spec in H.
-    unfold leq_in_prop in *; cbn in *. setoid_rewrite included_spec in H. intuition.
   Qed.
 
 
@@ -669,7 +671,7 @@ Section Invariant_subCPOs.
     -> is_true (Y x)) <-> is_true (P0 x).
   Proof. unfold_spec. tauto. Qed.
   
-  Lemma fun_ext : forall x y, x == y -> is_true (P0 x) <-> is_true (P0 y).
+  Lemma P0_preserves_weq : forall x y, x == y -> is_true (P0 x) <-> is_true (P0 y).
   Proof.
     intros x y Hxy. split; intro H; rewrite <- P0_spec; intros Y Hi Hs HP; rewrite HP.
       rewrite <- P0_spec in H; apply H; try assumption. now symmetry.
@@ -681,7 +683,7 @@ Section Invariant_subCPOs.
     split.
     + apply BForall_spec. setoid_rewrite <- BImpl_spec. intros x H.
       unfold Image in H. rewrite <- BExists_spec in H. destruct H as [x0 H]. rewrite <- BAnd_spec in H.
-      apply fun_ext with (F x0). apply H. rewrite <- P0_spec. intros Y Hi Hs HP. destruct H. rewrite <- P0_spec in H.
+      apply P0_preserves_weq with (F x0). apply H. rewrite <- P0_spec. intros Y Hi Hs HP. destruct H. rewrite <- P0_spec in H.
       unfold Invariant in Hi. rewrite included_spec in Hi. apply Hi. apply BExists_spec. exists x0.
       apply BAnd_spec. split. apply H. apply included_spec. apply Hi. apply Hs. apply HP.
       now fold_weq.
@@ -892,12 +894,12 @@ Section Fixpoints.
  rewrite <- is_subCPO_spec in PS.
  apply PS. apply included_spec. cbn. setoid_rewrite <- mon_fun_spec.
  intros x Hx. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
- apply fun_ext with (hx bot). apply Hhx. apply hxinv. assumption.
+ apply P0_preserves_weq with (hx bot). apply Hhx. apply hxinv. assumption.
  
  unfold Fix. fold_weq. apply weq_spec. split.
  
  + pose proof (set_of_fun_is_subCPO (P0 F) PS) as Hsub. rewrite <- mon_fun_spec in Hsub.
-   destruct Hsub as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]]. apply fun_ext.
+   destruct Hsub as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]]. apply P0_preserves_weq.
    rewrite Hhx at 1. apply leq_xsup. cbn. rewrite <- mon_fun_spec. exists (fun x => F (hx x)). repeat split. 
   - fold_weq. reflexivity.
   - intros x y Hx Hy Hxy. destruct F as [Ff Fmon]. cbn in *. rewrite <- BMonotony_spec in Fmon.
@@ -912,8 +914,194 @@ Section Fixpoints.
    rewrite <- is_subCPO_spec in PS. apply PS. rewrite included_spec. cbn.
    setoid_rewrite <- mon_fun_spec. intros x Hx. 
    destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
-   apply fun_ext with (hx bot). apply Hhx. now apply hxinv.
+   apply P0_preserves_weq with (hx bot). apply Hhx. now apply hxinv.
  Qed.
 
 
 End Fixpoints.
+
+
+
+Section Bourbaki_Witt.
+
+  Context {B : B_param} {X : valid_type} `{P : B_CPO (B := B) (X := X)}.
+  Definition classic_axiom := forall (P : Prop), P \/ ~ P.
+  
+  Definition is_Chain (Y : X -> B) := forall (x y : X), is_true (Y x) -> is_true (Y y) -> x <= y \/ y <= x.
+
+  Lemma chain_is_directed : forall D, is_Chain D -> is_true (Directed leq D).
+  Proof.
+    setoid_rewrite <- Directed_spec.
+    intros D Hd x y Hx Hy. destruct (Hd x y); intuition.
+    exists y. repeat split; intuition. fold_leq. reflexivity.
+    exists x. repeat split; intuition. fold_leq. reflexivity.
+  Qed.
+  
+
+  (* Now show that P0 is a chain, to prove that it has a sup (top). This is a fixpoint. *)
+
+  Definition lt x y := BAnd (leq x y) (BImpl (weq x y) BFalse).
+  Lemma lt_spec : forall x y, ((x <= y) /\ (~ x == y)) <-> is_true (lt x y).
+  Proof. unfold_spec. intuition. now apply BFalse_spec. Qed.
+  
+  Definition lt_in_prop x y := is_true (lt x y).
+  Infix "<" := lt_in_prop.
+
+  Lemma leq_is_lt_or_eq : classic_axiom -> forall x y, x <= y -> x == y \/ x < y. (* excluded middle ! *)
+  Proof. intros EM x y Hxy. destruct (EM (x==y)). now left. right. now apply lt_spec. Qed.
+
+  Lemma not_leq_and_gt : forall x y, ~ (x <= y /\ y < x). (* no need for EM *)
+  Proof. intros x y. intro. destruct H. apply lt_spec in H0. destruct H0. contradict H1. now apply weq_spec. Qed.
+
+  Definition Extreme F' : X -> B :=
+     (fun c => BAnd ((P0 F') c) 
+                    (BForall X (fun x => BImpl ((P0 F') x) 
+                                                (BImpl (lt x c) (leq (F' x) c))))).
+  Lemma Extreme_spec F' : forall c,
+    (is_true (P0 F' c) /\ forall x, is_true (P0 F' x) -> x < c -> F' x <= c) <-> is_true (Extreme F' c).
+  Proof. unfold_spec. tauto. Qed.
+
+  Definition Mc F' c : (X -> B) :=
+    (fun x => BAnd (P0 F' x) (BOr (leq x c) (leq (F' c) x))).
+  Lemma Mc_spec F' c : forall x,
+    (is_true (P0 F' x) /\ (x <= c \/ F' c <= x)) <-> is_true (Mc F' c x).
+  Proof. unfold_spec. tauto. Qed.
+  
+  
+  Variable F' : X -> X.
+  Hypothesis F'_preserves_weq : forall x y, x == y -> F' x == F' y.
+
+  Lemma Mc_is_P0 : classic_axiom -> is_true (Increasing F') 
+    -> forall c, is_true (Extreme F' c) 
+    -> is_true (set_eq (P0 F') (Mc F' c)).
+  Proof.
+    destruct P0_is_invariant_subCPO with F' as [Hi Hs]. unfold Invariant in Hi.
+    rewrite included_spec in Hi. rewrite <- is_subCPO_spec in Hs.    
+    pose proof P0_is_smallest_invariant_subCPO as HP0. setoid_rewrite included_spec in HP0.
+    
+    intros EM HF c Ec. apply Extreme_spec in Ec. destruct Ec as [Pc Ec'].
+    unfold Increasing in HF. rewrite <- BForall_spec in HF.
+    apply BForall_spec. setoid_rewrite <- BEq_spec. split.
+    + apply HP0.
+      - intros y Hy. rewrite <- Image_spec in Hy. inversion Hy.
+        destruct H as [H Hyx0]. rewrite <- Mc_spec in H. destruct H as [Px0 Hx0].
+        apply Mc_spec. split. apply Hi. rewrite <- Image_spec. exists x0.
+        split. apply Px0. assumption. destruct Hx0.
+        * apply leq_is_lt_or_eq in H. destruct H. right. apply weq_spec. rewrite Hyx0.
+          now apply F'_preserves_weq.
+          left. rewrite Hyx0. now apply Ec'. assumption.
+        * right. transitivity x0. assumption. rewrite Hyx0. apply HF.
+      - intros D Hinc. destruct D as [D HD]. rewrite included_spec in Hinc.
+        setoid_rewrite <- Mc_spec in Hinc. apply Mc_spec. split.
+        apply Hs. rewrite included_spec. intros x0 Dx0.
+        apply Hinc in Dx0. apply Dx0.
+        destruct (EM (exists (y : X), is_true (D y) /\ F' c <= y)). (* WARNING : excluded middle ! *)
+        * right. destruct H as [y Hy]. transitivity y. apply Hy. now apply leq_xsup.
+        * left. apply sup_spec. intros. destruct (Hinc y). assumption.
+          destruct H2. assumption. contradict H. now exists y.
+      - intros y1 y2 Hy12. setoid_rewrite <- Mc_spec. split; intros; destruct H as [HP0y HOr]; split.
+        now apply P0_preserves_weq with y1. destruct HOr; [left | right]; now rewrite <- Hy12.
+        now apply P0_preserves_weq with y2. destruct HOr; [left | right]; now rewrite Hy12.
+    + intro Hm. rewrite <- Mc_spec in Hm. apply Hm.
+  Qed.
+
+  Lemma P0_is_extreme : classic_axiom ->  is_true (Increasing F') 
+    -> forall x, is_true (P0 F' x) -> is_true (Extreme F' x).
+  Proof.
+    destruct P0_is_invariant_subCPO with F' as [Hi Hs]. unfold Invariant in Hi.
+    rewrite included_spec in Hi. rewrite <- is_subCPO_spec in Hs.    
+    pose proof P0_is_smallest_invariant_subCPO as HP0. setoid_rewrite included_spec in HP0.
+    
+    intros EM HF.
+    apply HP0. clear HP0.
+    + intros c Hc. rewrite <- Image_spec in Hc. destruct Hc. destruct H as [HPx HEx].
+      rewrite <- Extreme_spec in HPx.
+      apply Extreme_spec. split.
+    - apply Hi. rewrite <- Image_spec. exists x. split. apply HPx. assumption.
+    - intros. assert (is_true (set_eq (P0 F') (Mc F' x))). apply (Mc_is_P0 EM HF).
+      rewrite <- Extreme_spec. apply HPx.
+      assert (is_true (Mc F' x x0)). unfold set_eq in H1. rewrite <- BForall_spec in H1.
+      setoid_rewrite <- BEq_spec in H1. apply H1. apply H.
+      
+      rewrite <- Mc_spec in H2. destruct H2. destruct H3.
+      * rewrite HEx. apply leq_is_lt_or_eq in H3; intuition.
+        apply weq_spec. now apply F'_preserves_weq. transitivity x; intuition.
+        unfold Increasing in HF. rewrite <- BForall_spec in HF. apply HF.
+      * exfalso. eapply not_leq_and_gt. split. rewrite <- HEx in H3. apply H3. assumption.
+      + clear HP0. intros D Ed. apply Extreme_spec.
+        split. apply Hs. rewrite included_spec in Ed. apply included_spec. intros x Hx.
+        apply Ed in Hx. rewrite <- Extreme_spec in Hx. apply Hx.
+        intros x Px Hxd. destruct D as [D HD]. destruct (EM (exists c, is_true (D c) /\ x <= c)).
+    - destruct H as [c [Hdc Hcx]]. apply leq_is_lt_or_eq in Hcx; intuition.
+      * transitivity (F' c). apply weq_spec. now apply F'_preserves_weq.
+        assert (is_true (Mc F' c (sup (exist (fun Dbody0 : X -> B => Directed_in_prop leq Dbody0) D HD)))).
+        pose proof (Mc_is_P0 EM HF c). unfold set_eq in H0.
+        setoid_rewrite <- BForall_spec in H0. setoid_rewrite <- BEq_spec in H0.
+        apply H0. rewrite included_spec in Ed. apply Ed. apply Hdc.
+        apply Hs. apply included_spec. intros y Hy. rewrite included_spec in Ed.
+        apply Ed in Hy. rewrite <- Extreme_spec in Hy. apply Hy.
+        rewrite <- Mc_spec in H0.
+        destruct H0. destruct H1. exfalso. eapply not_leq_and_gt. split. rewrite <- H in H1.
+        apply H1. apply Hxd. assumption.
+      * transitivity c. rewrite included_spec in Ed. cbn in *. apply Ed in Hdc.
+        rewrite <- Extreme_spec in Hdc. now apply Hdc. now apply leq_xsup.
+    - assert (sup (exist (fun Dbody0 : X -> B => Directed_in_prop leq Dbody0) D HD) <= x).
+      * apply sup_spec. intros. assert (is_true (Mc F' y x)). 
+        
+        pose proof (Mc_is_P0 EM HF y). unfold set_eq in H1.
+        setoid_rewrite <- BForall_spec in H1. setoid_rewrite <- BEq_spec in H1.
+        apply H1. rewrite included_spec in Ed. apply Ed. apply H0.
+        assumption.
+        
+        unfold Increasing in HF. rewrite <- BForall_spec in HF.
+        rewrite HF.
+        
+        rewrite <- Mc_spec in H1. destruct H1. destruct H2. contradict H.
+        now exists y. assumption.
+      * exfalso. eapply not_leq_and_gt. split. apply H0. assumption.
+    + intros y1 y2 Hy12. setoid_rewrite <- Extreme_spec. split; intros; destruct H as [HP0y HImp]; split.
+        now apply P0_preserves_weq with y1. intros x HP0x Hxy2. rewrite <- Hy12. apply HImp. assumption.
+        apply lt_spec. apply lt_spec in Hxy2. now rewrite Hy12.
+        now apply P0_preserves_weq with y2. intros x HP0x Hxy1. rewrite Hy12. apply HImp. assumption.
+        apply lt_spec. apply lt_spec in Hxy1. now rewrite <- Hy12.
+  Qed.
+
+
+  Lemma P0_is_Chain : classic_axiom -> is_true (Increasing F') -> is_Chain (P0 F').
+  Proof.
+    intros EM HF x y Hx Hy. assert (is_true (Mc F' x y)).
+    pose proof (Mc_is_P0 EM HF x). unfold set_eq in H.
+    setoid_rewrite <- BForall_spec in H. setoid_rewrite <- BEq_spec in H.
+    apply H.
+    apply P0_is_extreme; intuition. assumption.
+    rewrite <- Mc_spec in H. destruct H. destruct H0. now right. left. transitivity (F' x).
+    unfold Increasing in HF. rewrite <- BForall_spec in HF. apply HF.
+    assumption.
+  Qed.
+
+  Lemma P0_is_directed : classic_axiom -> is_true (Increasing F') -> is_true (Directed leq (P0 F')).
+  Proof. intros EM HF. apply chain_is_directed. now apply P0_is_Chain. Qed.
+
+  (* Note : since we put excluded middle and functional extensionality as hypothesis, we lose constructivity,
+we can't just define our fixpoint as below :
+Program Definition top_P0 (F':X -> X) (H : Increasing F') := (sup (exist _ (P0 F') _)).
+Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
+
+  (* The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper and in work_prop.v) *)
+  Theorem Fixpoint_III : classic_axiom -> is_true (Increasing F') -> exists x, is_true (Fix F' x) (*is_minimal (Fix F') x*).
+  Proof.
+    destruct P0_is_invariant_subCPO with F' as [Hi Hs]. unfold Invariant in Hi.
+    rewrite included_spec in Hi. rewrite <- is_subCPO_spec in Hs.
+    
+    intros EM HF. exists (sup (exist _ (P0 F') (P0_is_directed EM HF))).
+    apply weq_spec. split. apply leq_xsup; cbn. apply Hi. 
+    rewrite <- Image_spec. exists (sup
+       (exist (fun Dbody0 : X -> B => Directed_in_prop leq Dbody0) 
+          (P0 F') (P0_is_directed EM HF))). split. apply Hs. cbn. now apply included_spec. cbn.
+    reflexivity.
+    apply sup_spec; cbn. intros.
+    assert (forall x, x <= F' x) as HF'. apply BForall_spec. apply HF. rewrite <- HF'.
+    now apply leq_xsup.
+  Qed.
+
+End Bourbaki_Witt.
