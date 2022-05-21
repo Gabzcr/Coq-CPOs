@@ -23,6 +23,7 @@ Program Instance Prop_B : B_param :=
     BImpl P Q := P -> Q;
     BForall V Pv := forall v, Pv v;
     BExists V Pv := exists v, Pv v;
+    memo X P := P
   |}.
 
 
@@ -30,6 +31,21 @@ Program Definition bool_fin : fin bool := {| el := cons true (cons false nil) |}
 Next Obligation. destruct a; destruct b. now left. now right. now right. now left. Qed.
 Next Obligation. destruct a. now left. right. now left. Qed.
 
+ Fixpoint is_member {X} {Xfin : fin X} (x:X) l := match l with 
+  | nil => false
+  | h :: q => (eq_bool Xfin x h) || (@is_member X Xfin x q)
+  end.
+
+ Lemma is_member_invariant {X} {Xfin : fin X} P : 
+  forall x l, Is_true (is_member (Xfin := Xfin) x (filter P l)) -> List.In x l.
+ Proof.
+  induction l.
+  + now cbn.
+  + cbn. destruct (P a) eqn:Pa. cbn. intro H. apply orb_prop_elim in H. destruct H.
+    left. unfold eq_bool in H. destruct (eq_dec Xfin x a). now symmetry. contradict H.
+    right. now apply IHl.
+    intro H. right. now apply IHl.
+ Qed.
 
  Program Instance Bool_B : B_param :=
   {|
@@ -43,6 +59,8 @@ Next Obligation. destruct a. now left. right. now left. Qed.
     BImpl := implb;
     BForall V := fun P => List.forallb P (el (projT2 V));
     BExists V := fun P => List.existsb P (el (projT2 V));
+    memo X P := let l := List.filter P (el (projT2 X)) in
+                        fun x => is_member x l;
   |}.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
   Next Obligation. destruct b1; destruct b2; intuition. Qed.
@@ -64,6 +82,24 @@ Next Obligation. destruct a. now left. right. now left. Qed.
     exists x. split. cbn in *. apply (all_el X). now apply Is_true_eq_true.
     apply Is_true_eq_true in Q. apply List.existsb_exists in Q. destruct Q as [x Hx]. exists x.
     apply Is_true_eq_left. apply Hx. Qed.
+  Next Obligation.
+    cbn in *.
+    assert (forall l x, List.In x l -> Is_true (is_member (Xfin := X0) x (filter P l)) <-> Is_true (P x)).
+    + induction l.
+      - intros y H. cbn; intuition.
+      - intros y H. cbn. destruct (eq_dec X0 y a).
+        * rewrite <- e. cbn. destruct (P y) eqn : Py; cbn; intuition.
+        apply orb_prop_intro. left. unfold eq_bool. destruct (eq_dec X0 y y). now cbn. now contradict n.
+        apply IHl in H0. rewrite Py in H0. contradict H0. now apply (is_member_invariant (Xfin := X0)) with P.
+        * inversion H. symmetry in H0. now contradict H0.
+          destruct (P a) eqn:HPa. cbn. destruct (P y) eqn:HPy; cbn. split; try auto. intro. apply orb_prop_intro.
+          right. apply IHl. assumption. now rewrite HPy.
+          split; try auto. intro. apply orb_prop_elim in H1. destruct H1. unfold eq_bool in H1.
+          destruct (eq_dec X0 y a). now contradict e. now contradict H1.
+          apply IHl in H1. apply Is_true_eq_true in H1. contradict HPy. now rewrite H1. assumption.
+          intuition. now apply IHl.
+   + apply H. apply all_el.
+   Qed.
 
 End TruthValueInstances.
 
@@ -549,6 +585,38 @@ End Basic_CPOs.
 
 
 
+
+
+Section CPO_based_Truth_values.
+
+ Context {B0 : B_param} {X0 : valid_type} `{P : B_CPO (B := B0) (X := X0)}.
+
+
+(*
+ Program Instance CPO_B : B_param :=
+  {|
+    B := X;
+    K := K;
+    is_true x := is_true (weq x Top);
+    BFalse := Bot;
+    BAnd := cap;
+    BOr := cup;
+    BImpl x1 x2 := Inf (fun x => BAnd (leq x2 x) (BImpl (leq x1 x) (BFalse))); 
+    (* x1 -> x2 ssi x1 <= x2, i.e l'ensemble ci-dessus est vide. Sinon la valeur de vérité est "x2".
+    Pas ouf, mais je ne vois pas trop ce qu'on pourrait vouloir mettre comme valeur de vérité.*)
+    
+    BForall := fun P => ??? ;
+    BExists := fun P => ???;
+  |}.
+*)
+
+End CPO_based_Truth_values.
+
+
+
+
+
+
 Section CPO_Examples.
 
 Variant CPO_set : Type := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
@@ -572,6 +640,7 @@ Proof. intros. split; intro H.
     now right.
 Qed.
 
+#[global]
 Program Instance B_PO_ex : @B_PO Bool_B CPO_valid_type :=
   {|
     weq x y := leq3 x y && leq3 y x;
@@ -634,7 +703,7 @@ Definition sup_ex (D :@directed_set Bool_B CPO_valid_type leq3) := if (D x2) the
       - unfold leq3. apply or_to_orb. right. right. reflexivity.
    Qed.
 
-
+ #[global]
  Program Instance B_Lattice_ex : B_CL B_PO_ex :=
   {|
     Sup D := if (D x2) then x2 else (
@@ -738,5 +807,215 @@ Goal True.
 set (x := @lfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon).
 (*simpl in x. unfold sup_ex in x.*) vm_compute in x.
 (*Eval cbv in @gfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon.*)
+easy.
+Qed.
 
 End CPO_Examples.
+
+
+
+
+
+
+
+
+
+
+Section CPO_based_Truth_values2.
+
+ Notation top := x2.
+ Notation unknown := x1.
+ 
+ (* Ensemble à trois éléments, valeur de vérité Unknown ou top*)
+ 
+ Definition imply x1 x2 := match x1,x2 with
+    | bottom, _ => top
+    | _, top => top
+    | unknown, unknown => top
+    | top, unknown => unknown
+    | unknown, bottom => bottom
+    | top, bottom => bottom
+  end.
+ 
+ Program Instance CPO_B_True : B_param :=
+  {|
+    B := CPO_set;
+    K := @K Bool_B;
+    is_true x := is_true (leq (B_PO := B_PO_ex) unknown x);
+    BFalse := @Bot Bool_B CPO_valid_type B_PO_ex B_Lattice_ex;
+    BTrue := top;
+    BAnd := (@cap Bool_B CPO_valid_type B_PO_ex B_Lattice_ex);
+    BOr := (@cup Bool_B CPO_valid_type B_PO_ex B_Lattice_ex);
+    BImpl := imply;
+    BForall V := fun P => Inf (fun x => BExists V (fun v => (weq x (P v))));
+    BExists V := fun P => Sup (fun x => BExists V (fun v => (weq x (P v))));
+  |}.
+  Next Obligation. now destruct b1, b2. Qed.
+  Next Obligation. destruct b1, b2; intuition. Qed.
+  Next Obligation. destruct b1, b2; intuition. Qed.
+  Next Obligation. exists (el (@funP A X _)). apply (eq_dec (@funP A X _)).
+   apply (all_el (@funP A X _)). Defined.
+  Next Obligation. exists (el (@funAB A B X X0)). apply (eq_dec (@funAB A B X X0)).
+   apply (all_el (@funAB A B X X0)). Defined.
+  Next Obligation. exists (el (@funAB A _ X CPO_fin)). apply (eq_dec (@funAB A _ X CPO_fin)).
+   apply (all_el (@funAB A _ X CPO_fin)). Defined.
+  Next Obligation. cbn in *.
+    split; intro Q. 
+    + destruct (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X)) eqn:EQ1; cbn;
+      destruct (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X)) eqn:EQ2; cbn;
+      destruct (existsb (fun v : V => leq3 bottom (P v) && leq3 (P v) bottom) (el X)) eqn:EQ3; cbn; try auto;
+      rewrite existsb_exists in EQ3; destruct EQ3 as [x [Xx Hx]]; specialize Q with x; now destruct (P x).
+    + destruct (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X)) eqn:EQ1; cbn in *;
+      destruct (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X)) eqn:EQ2; cbn in *;
+      destruct (existsb (fun v : V => leq3 bottom (P v) && leq3 (P v) bottom) (el X)) eqn:EQ3; cbn in *;
+      try (now contradict Q);
+        intro x; destruct (P x) eqn:EQ; try auto; contradict EQ3; 
+        assert (existsb (fun v : V => leq3 bottom (P v) && leq3 (P v) bottom) (el X) = true) as H;
+        try (rewrite existsb_exists; exists x; split); try apply all_el; try (now rewrite EQ);
+        now rewrite H.
+  Qed.
+  Next Obligation. cbn in *.
+    destruct (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X)) eqn:EQ1; cbn in *;
+    destruct (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X)) eqn:EQ2; cbn in *;
+    intuition.
+    + apply existsb_exists in EQ2. destruct EQ2 as [x [Xx Hx]].
+      apply Is_true_eq_left in Hx. apply andb_prop_elim in Hx. exists x. apply Hx.
+    + apply existsb_exists in EQ1. destruct EQ1 as [x [Xx Hx]].
+      apply Is_true_eq_left in Hx. apply andb_prop_elim in Hx. exists x.
+      destruct (P x); try (now contradict Hx). auto.
+    + apply existsb_exists in EQ2. destruct EQ2 as [x [Xx Hx]].
+      apply Is_true_eq_left in Hx. apply andb_prop_elim in Hx. exists x. apply Hx.
+    + destruct H as [x Hx]. destruct (P x) eqn:EQ. contradict Hx. contradict EQ2.
+      assert (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X) = true).
+      apply existsb_exists. exists x. split. apply all_el. rewrite EQ. now cbn. now rewrite H.
+      contradict EQ1. assert (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X) = true).
+      apply existsb_exists. exists x. split. apply all_el. now rewrite EQ. now rewrite H.
+  Qed.
+
+
+(* Same but only top is true *)
+ Definition imply' x1 x2 := match x1,x2 with
+    | bottom, _ => top
+    | _, top => top
+    | unknown, unknown => top
+    | top, unknown => unknown
+    | unknown, bottom => top (*RMQ : c'est très intéressant ici, 
+    la seule valeur qui marche et respecte la spécification de l'implication c'est top.
+    Ca correspond à l'intuition, les valeurs sont toutes réduites à leur identification à
+    vrai ou faux, et indistinguable de ces derniers !
+    (Parce que c'est pas logique que unknown -> bot soit vrai, sauf si unknown est forcément faux.*)
+    | top, bottom => bottom
+  end.
+
+Program Instance CPO_B_False : B_param :=
+  {|
+    B := CPO_set;
+    K := @K Bool_B;
+    is_true x := is_true (leq (B_PO := B_PO_ex) top x);
+    BFalse := @Bot Bool_B CPO_valid_type B_PO_ex B_Lattice_ex;
+    BTrue := top;
+    BAnd := (@cap Bool_B CPO_valid_type B_PO_ex B_Lattice_ex);
+    BOr := (@cup Bool_B CPO_valid_type B_PO_ex B_Lattice_ex);
+    BImpl := imply';
+    BForall V := fun P => Inf (fun x => BExists V (fun v => (weq x (P v))));
+    BExists V := fun P => Sup (fun x => BExists V (fun v => (weq x (P v))));
+  |}.
+  Next Obligation. now destruct b1, b2. Qed.
+  Next Obligation. destruct b1, b2; intuition. Qed.
+  Next Obligation. destruct b1, b2; intuition. Qed.
+  Next Obligation. exists (el (@funP A X _)). apply (eq_dec (@funP A X _)).
+   apply (all_el (@funP A X _)). Defined.
+  Next Obligation. exists (el (@funAB A B X X0)). apply (eq_dec (@funAB A B X X0)).
+   apply (all_el (@funAB A B X X0)). Defined.
+  Next Obligation. exists (el (@funAB A _ X CPO_fin)). apply (eq_dec (@funAB A _ X CPO_fin)).
+   apply (all_el (@funAB A _ X CPO_fin)). Defined.
+  Next Obligation. cbn in *.
+    split; intro Q.
+    + destruct (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X)) eqn:EQ1; cbn;
+      destruct (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X)) eqn:EQ2; cbn;
+      destruct (existsb (fun v : V => leq3 bottom (P v) && leq3 (P v) bottom) (el X)) eqn:EQ3; cbn; try auto;
+      try (rewrite existsb_exists in EQ3; destruct EQ3 as [x [Xx Hx]]; specialize Q with x; now destruct (P x));
+      rewrite existsb_exists in EQ2; destruct EQ2 as [x [Xx Hx]]; specialize Q with x; now destruct (P x).
+    + destruct (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X)) eqn:EQ1; cbn in *;
+      destruct (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X)) eqn:EQ2; cbn in *;
+      destruct (existsb (fun v : V => leq3 bottom (P v) && leq3 (P v) bottom) (el X)) eqn:EQ3; cbn in *;
+      try (now contradict Q).
+      -  intro x; destruct (P x) eqn:EQ; try auto. contradict EQ3; 
+        assert (existsb (fun v : V => leq3 bottom (P v) && leq3 (P v) bottom) (el X) = true) as H;
+        try (rewrite existsb_exists; exists x; split); try apply all_el; try (now rewrite EQ);
+        now rewrite H.
+        contradict EQ2; 
+        assert (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X) = true) as H;
+        try (rewrite existsb_exists; exists x; split); try apply all_el; try (now rewrite EQ);
+        now rewrite H.
+     - intro x; destruct (P x) eqn:EQ; try auto. contradict EQ3; 
+        assert (existsb (fun v : V => leq3 bottom (P v) && leq3 (P v) bottom) (el X) = true) as H;
+        try (rewrite existsb_exists; exists x; split); try apply all_el; try (now rewrite EQ);
+        now rewrite H.
+        contradict EQ2; 
+        assert (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X) = true) as H;
+        try (rewrite existsb_exists; exists x; split); try apply all_el; try (now rewrite EQ);
+        now rewrite H.
+  Qed.
+  Next Obligation. cbn in *.
+    destruct (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X)) eqn:EQ1; cbn in *;
+    destruct (existsb (fun v : V => leq3 unknown (P v) && leq3 (P v) unknown) (el X)) eqn:EQ2; cbn in *;
+    intuition;
+      try (apply existsb_exists in EQ1; destruct EQ1 as [x [Xx Hx]];
+      apply Is_true_eq_left in Hx; apply andb_prop_elim in Hx; exists x; apply Hx);
+      assert (existsb (fun v : V => leq3 top (P v) && leq3 (P v) top) (el X) = true);
+      try (apply existsb_exists; destruct H as [x Hx]; exists x; split; try (apply all_el); now destruct (P x));
+      contradict EQ1; now rewrite H0.
+   Qed.
+
+(*
+ Context {X : valid_type (B_param := Bool_B)} {L' : B_PO (B := Bool_B) (X := X)} 
+  {Xfin_CL : B_CL L'}.
+ Hypothesis no_unique_valued_logic : ~ (weq_in_prop (B := Bool_B) Bot Top).
+
+
+ Program Instance CPO_B : B_param :=
+  {|
+    B := X;
+    K := @K Bool_B;
+    is_true x := is_true (weq (B_PO := L') x Top);
+    BFalse := Bot; (*@Bot Bool_B CPO_valid_type B_PO_ex B_Lattice_ex;*)
+    BTrue := Top;
+    BAnd := cap;
+    BOr := cup;
+    BImpl x1 x2 := Sup (fun x => leq (cap x1 x) x2); (*cf algèbres de Heyting*)
+    
+    BForall V := fun P => Inf (fun x => BExists V (fun v => (weq x (P v))));
+    BExists V := fun P => Sup (fun x => BExists V (fun v => (weq x (P v))));
+  |}.
+  Next Obligation. split; intro H.
+    + destruct H as [Hb1 Hb2]. apply (weq_spec (B_PO := L')). split. apply Top_spec.
+      apply cap_spec. split. apply (weq_spec (B_PO := L')) in Hb1. apply Hb1.
+      apply (weq_spec (B_PO := L')) in Hb2. apply Hb2.
+    + apply (weq_spec (B_PO := L')) in H. destruct H as [Hleq Hgeq].
+      apply cap_spec in Hgeq. split; apply (weq_spec (B_PO := L')); split; try apply Top_spec; apply Hgeq.
+  Qed.
+  Next Obligation. split; intro H.
+    + apply (weq_spec (B_PO := L')). split. apply Top_spec.
+      destruct H; apply (weq_spec (B_PO := L')) in H. transitivity b1.
+      apply H. apply cup_l. transitivity b2. apply H. apply cup_r.
+    + (* FAUX ! Ceci ne serait vrai que si on travaille dans une chaîne, ou dans Prop. *)
+  Qed.
+  
+  *)
+
+End CPO_based_Truth_values2.
+
+(*
+Lemma notnotand : forall P Q, ~~ (P /\ Q) <-> ~~ P /\ ~~ Q.
+Proof. tauto. Qed.
+
+Lemma notnotimpl : forall (P Q : Prop), ~~ (P -> Q) <-> (~~ P -> ~~ Q).
+Proof. tauto. Qed.
+
+Lemma notnotor : forall P Q, ~~ (P \/ Q)  -> ~~ (~~ P \/ ~~ Q).
+Proof. intuition. Qed.
+
+Lemma test : forall (P Q R : Prop), (P \/ Q ->  R) <-> ((P -> R) /\ (Q -> R)).
+Proof. tauto. Qed.
+*)

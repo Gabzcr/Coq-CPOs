@@ -1,6 +1,4 @@
 From Coq Require Import Arith.
-(*Require Import Psatz.*)
-(*Require Export Setoid Morphisms.*)
 Import Coq.Lists.List.
 Set Implicit Arguments.
 

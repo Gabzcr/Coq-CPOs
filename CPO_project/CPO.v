@@ -37,10 +37,25 @@ Class B_param := { B : Type;
   BExists (V : valid_type) : (((TBody V) -> B) -> B);
   BExists_spec (V : valid_type) : forall (P : (TBody V) -> B), 
     (exists x, is_true (P x)) <-> is_true (BExists V P);
+  
+  
+  (* Memoisation for computation speed-up*)
+  memo (X : valid_type) : ((projT1 X) -> B) -> ((projT1 X) -> B);
+  memo_spec (X : valid_type) : forall P x, is_true (memo X P x) <-> is_true (P x);
   }.
   
   Coercion B : B_param >-> Sortclass.
   Coercion TBody : valid_type >-> Sortclass.
+  
+  
+  (*
+  
+  cas fini:
+  Definition memo P := let l := List.filter P (el X) in
+                        fun x => "List.mem" x l.
+  
+  *)
+  
 
 
 Definition BEq `{B_param} PB1 PB2 := BAnd (BImpl PB1 PB2) (BImpl PB2 PB1).
@@ -182,6 +197,12 @@ Section Partial_order.
     destruct f as [f fmon]. destruct g as [g gmon]. cbn. rewrite <- BMonotony_spec in fmon, gmon.
   apply fmon. now apply gmon. Qed.
 
+ Lemma from_above x y: (forall z, x<=z <-> y<=z) -> x==y.
+  Proof. intro E. apply weq_spec. split; apply E; reflexivity. Qed.
+
+  Lemma from_below x y: (forall z, z<=x <-> z<=y) -> x==y.
+  Proof. intro E. apply weq_spec. split; apply E; reflexivity. Qed.
+
 End Partial_order.
 Infix "°" := comp (at level 20): B_PO.
 
@@ -209,10 +230,12 @@ Section sup.
   Lemma Bot_spec: forall x, Bot <= x.
   Proof. intro. apply Sup_spec. intros y Hy. contradict Hy. apply BFalse_spec. Qed.
 
+
   Definition Top := Sup (fun _ => BTrue).
 
   Lemma Top_spec: forall x, x <= Top.
   Proof. intro. apply leq_xSup. apply BTrue_spec. Qed.
+
 
   (** Inf *)
 
@@ -232,6 +255,87 @@ End sup.
 
 #[global] Hint Resolve bot_spec: core.
 #[global] Hint Resolve Bot_spec: core.
+
+
+
+Section ForLattices.
+
+ Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {L : B_CL P'}.
+
+(** define binary join out of arbitrary joins  *)
+ Definition cup x y := Sup (fun i => BOr (weq i x) (weq i y)).
+ Lemma cup_spec: forall x y z, (cup x y) <= z <-> (x <= z /\ y <= z).
+Proof.
+  split.
+  + unfold cup. intro H. split; eapply Sup_spec; try apply H; apply BOr_spec; [left | right];
+    now apply weq_spec.
+  + unfold cup. intro H. apply Sup_spec. intro i. intro.
+    rewrite <- BOr_spec in H0. destruct H0; rewrite H0; apply H.
+Qed.
+
+ (** define binary meet out of arbitrary joins  *)
+ Definition cap x y := Sup (fun z => BAnd (leq z x) (leq z y)). (*take sup of all elements smaller than x and y*)
+ Lemma cap_spec: forall x y z, z <= (cap x y) <-> (z <= x /\ z <= y).
+Proof.
+  intros x y z. split.
+    + intro H. assert (cap x y <= x /\ cap x y <= y) as H0.
+      - split; apply Sup_spec; intros i Q; rewrite <- BAnd_spec in Q; destruct Q as [H0 H1]; [apply H0|apply H1].
+      - split;  destruct H0 as [H1 H2]; transitivity (cap x y). apply H. apply H1. apply H. apply H2.
+    + intro H. unfold cap. apply leq_xSup. apply BAnd_spec. apply H.
+Qed.
+
+(** Binary join *)
+ Lemma leq_xcup x y z: z <= x \/ z <= y -> z <= cup x y.
+ Proof.
+   destruct (cup_spec x y (cup x y)) as [H _].
+   now intros [E|E]; rewrite E; apply H.
+ Qed.
+ Lemma cup_l x y: x <= cup x y.
+ Proof. auto using leq_xcup. Qed.
+ Lemma cup_r x y: y <= cup x y.
+ Proof. auto using leq_xcup. Qed.
+
+ Lemma cupA x y z: cup x (cup y z) == cup (cup x y) z.
+ Proof. apply from_above.
+  intro z0. split.
+    + intro H. apply Sup_spec. unfold_spec. intros i Q. destruct Q. 
+      - rewrite H0. apply Sup_spec. unfold_spec. intros i0 Q. destruct Q;
+        rewrite H1; transitivity (cup x (cup y z)). apply cup_l. apply H.
+        * transitivity (cup y z). apply cup_l. apply cup_r.
+        * apply H.
+      - rewrite H0. transitivity (cup x (cup y z)).
+        * transitivity (cup y z); apply cup_r.
+        * apply H.
+    + intro H. apply Sup_spec. unfold_spec. intros i Q. destruct Q. 
+      - rewrite H0. transitivity (cup (cup x y) z).
+        * transitivity (cup x y); apply cup_l.
+        * apply H.
+      - rewrite H0. apply Sup_spec. unfold_spec. intros i0 Q. destruct Q;
+        rewrite H1; transitivity (cup (cup x y) z). transitivity (cup x y). apply cup_r. apply cup_l. apply H.
+        * apply cup_r.
+        * apply H.
+Qed.
+
+
+
+ Lemma cupC x y: cup x y == cup y x.
+  rewrite weq_spec. split; apply Sup_spec; intros i H; rewrite <- BOr_spec in H. (*much simpler, and exactly twice the same*)
+    + destruct H as [H0|H1]; [rewrite H0|rewrite H1]; [apply cup_r | apply cup_l].
+    + destruct H as [H0|H1]; [rewrite H0|rewrite H1]; [apply cup_r | apply cup_l].
+  Qed.
+
+ Lemma cupI x: cup x x == x.
+ Proof.
+  rewrite weq_spec. split. 
+    + apply Sup_spec. intros i H. rewrite <- BOr_spec in H. destruct H; rewrite H; reflexivity.
+    + apply cup_l.
+Qed.
+
+End ForLattices.
+
+Global Hint Resolve cup_l cup_r: core.
+
+
 
 
 
@@ -776,6 +880,7 @@ Section Fixpoints.
 
 
   Variable F:mon.
+  Let P0_memo := memo X (P0 F).
   
   (** * Fixpoint theorems and proofs : second theorem. *)
 
@@ -885,36 +990,51 @@ Section Fixpoints.
   + apply H. intros x Hx. cbn in Hx. now apply BFalse_spec in Hx.
  Qed.
  
- Definition lfp_II := (sup (fun_on_Y_subCPO (P0 F) bot)).
+ Definition lfp_II := (sup (fun_on_Y_subCPO P0_memo bot)).
+ 
+ Lemma P0_memo_preserves_weq : forall (x y : X),
+       x == y -> is_true (P0_memo x) <-> is_true (P0_memo y).
+ Proof. unfold P0_memo. setoid_rewrite memo_spec. apply P0_preserves_weq. Qed.
 
  Theorem Fixpoint_II_no_subCPO : is_true (Fix F lfp_II).
  Proof.
  unfold lfp_II. pose proof (P0_is_invariant_subCPO F) as [PI PS].
- assert (is_true ((P0 F) (sup (fun_on_Y_subCPO (P0 F) bot)))).
+ assert (is_true ((P0 F) (sup (fun_on_Y_subCPO P0_memo bot)))).
  rewrite <- is_subCPO_spec in PS.
  apply PS. apply included_spec. cbn. setoid_rewrite <- mon_fun_spec.
  intros x Hx. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
- apply P0_preserves_weq with (hx bot). apply Hhx. apply hxinv. assumption.
+ apply P0_preserves_weq with (hx bot). apply Hhx.
+ rewrite <- memo_spec. apply hxinv. assumption.
  
  unfold Fix. fold_weq. apply weq_spec. split.
  
- + pose proof (set_of_fun_is_subCPO (P0 F) PS) as Hsub. rewrite <- mon_fun_spec in Hsub.
-   destruct Hsub as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]]. apply P0_preserves_weq.
+ + assert (is_true (is_subCPO P0_memo)) as PS_memo. 
+   apply is_subCPO_spec. intros D H0. unfold P0_memo. rewrite memo_spec. rewrite <- P0_spec.
+   intros Y Hi Hs HP. rewrite <- is_subCPO_spec in Hs. apply Hs.
+      rewrite included_spec. rewrite included_spec in H0. intros x Hx. specialize H0 with x. 
+      apply H0 in Hx. unfold P0_memo in Hx. rewrite memo_spec in Hx. rewrite <- P0_spec in Hx.
+      apply Hx. apply Hi. apply is_subCPO_spec. apply Hs. apply HP.
+ 
+   pose proof (set_of_fun_is_subCPO P0_memo PS_memo) as Hsub. rewrite <- mon_fun_spec in Hsub.
+   destruct Hsub as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]]. apply P0_memo_preserves_weq.
    rewrite Hhx at 1. apply leq_xsup. cbn. rewrite <- mon_fun_spec. exists (fun x => F (hx x)). repeat split. 
   - fold_weq. reflexivity.
-  - intros x y Hx Hy Hxy. destruct F as [Ff Fmon]. cbn in *. rewrite <- BMonotony_spec in Fmon.
+  - intros x y Hx Hy Hxy. clear H. clear Hhx. destruct F as [Ff Fmon]. cbn in *. rewrite <- BMonotony_spec in Fmon.
     apply Fmon. now apply hxmon.
   - intros x Hx. fold_leq. transitivity (hx x). now apply hxinc.
-    pose proof P0_is_in_Post. rewrite included_spec in H0. apply H0. now apply hxinv.
-  - intros x Hx. unfold Invariant in PI. rewrite included_spec in PI. apply PI. unfold Image.
+    pose proof P0_is_in_Post. rewrite included_spec in H0. apply H0. unfold P0_memo in *. 
+    setoid_rewrite memo_spec in hxinv. apply hxinv. now apply memo_spec.
+  - intros x Hx. unfold Invariant in PI. rewrite included_spec in PI.
+    unfold P0_memo in *. rewrite memo_spec. apply PI. unfold Image.
     rewrite <- BExists_spec. setoid_rewrite <- BAnd_spec.
-    exists (hx x). split. now apply hxinv. fold_weq. reflexivity.
+    exists (hx x). split. setoid_rewrite memo_spec in hxinv. apply hxinv. now apply memo_spec. fold_weq. reflexivity.
   - assumption. 
  + pose proof P0_is_in_Post. rewrite included_spec in H0. apply H0.
    rewrite <- is_subCPO_spec in PS. apply PS. rewrite included_spec. cbn.
    setoid_rewrite <- mon_fun_spec. intros x Hx. 
    destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
-   apply P0_preserves_weq with (hx bot). apply Hhx. now apply hxinv.
+   apply P0_preserves_weq with (hx bot). apply Hhx.
+   unfold P0_memo in *. setoid_rewrite memo_spec in hxinv. apply hxinv. now apply memo_spec.
  Qed.
 
 
@@ -1105,3 +1225,11 @@ Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
   Qed.
 
 End Bourbaki_Witt.
+
+
+Require Coq.extraction.Extraction.
+Extraction Language OCaml.
+
+(* Extraction "lfp.ml" lfp_II. *)
+
+
