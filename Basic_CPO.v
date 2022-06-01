@@ -770,11 +770,11 @@ Section Fixpoints.
 End Fixpoints.
 
 
-(** * Theorem III : Bourbaki-Witt theorem. This theorem requires classic logic, it is false in intuitionist logic. *)
+(** * Theorem III : Bourbaki-Witt theorem. This theorem requires classic logic. *)
 
 Section Bourbaki_Witt.
 
-  Context {X} `{P: CPO X} (*`{L : CompleteLattice X}*).
+  Context {X} `{P: CPO X}.
   Definition classic_axiom := forall (P : Prop), P \/ ~ P.
 
   (* Now show that P0 is a chain, to prove that it has a sup (top). This is a fixpoint. *)
@@ -855,7 +855,7 @@ Program Definition top_P0 (F':X -> X) (H : Increasing F') := (sup (exist _ (P0 F
 Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
 
   (* The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper and in work_prop.v) *)
-  Theorem Fixpoint_III (F' : X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x (*is_minimal (Fix F') x*).
+  Theorem Fixpoint_III (F' : X -> X) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x.
   Proof.
     intros EM Fp HF. exists (sup (exist _ (P0 F') (P0_is_directed EM Fp HF))).
     apply weq_spec. split. apply leq_xsup; cbn. apply P0_is_invariant_subCPO.
@@ -864,60 +864,6 @@ Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
   Qed.
 
 End Bourbaki_Witt.
-
-(* Attempt at adapting proof from coinduction.v *)
-(*
- Variable F: X -> X.
- Hypothesis HF : Increasing F.
-
-Inductive S: X -> Prop :=
- | S_bot : S bot
- | S_succ : forall x, S x -> S (F x)
- | S_sup : forall (D : directed_set leq), included D S -> S (sup D).
-
-
- Lemma choose (Px A B: X -> Prop): (forall x, Px x -> A x \/ B x) -> (exists x, Px x /\ B x) \/ (forall x, Px x -> A x).
- Proof.
-(*
-   intro H. classical_right. intros x Px.
-   destruct (H _ Px). assumption. exfalso; eauto. 
- Qed.*)
-Admitted.
-
-Lemma directed_lemma s : S s -> Directed leq (fun t => S t /\ t <= s).
-Proof.
-  intros Hs x y [Hx HFx] [Hy HFy]. exists s. repeat split; intuition.
-Qed.
-
-Definition Sflat_set s (Hs : S s) := (exist (Directed leq) (fun t => S t /\ t <= s) (directed_lemma Hs)).
-
-Lemma Sflat s (Hs : S s): s == sup (exist _ (fun t => S t /\ t <= s) (directed_lemma Hs)).
- Proof.
-   apply antisym. eapply sup_spec. reflexivity. cbn. split; intuition.
-   apply sup_spec; now cbn.
- Qed.
-
- Lemma S_linear x y: S x -> S y -> x <= y \/ y <= x.
- Proof.
-   intro Sx. revert y. induction Sx as [|x0 Hx0 IH | x Hx IH]; intros y Sy.
-   - now left.
-   - pose proof (Sflat Sy) as E.
-     set (T t := S t /\ y <= F t) in E.
-     assert (IH': forall y, T y -> x0 <= y \/ y <= x0). intros t Tt. apply IH, Tt.
-     Check choose. 
-     destruct (choose _ _ _ IH') as [[s [Ss sx]]|F0].
-     right. rewrite E, <-sx. now apply leq_infx.
-     left. rewrite E. apply inf_spec; intros s Ts. now apply b, F.
-   - assert (IH': forall a, T a -> y <= a \/ a <= y). intros a A. specialize (IH _ A _ Sy). tauto. 
-     destruct (choose _ _ _ IH') as [[s [Ss sx]]|F].
-     left. rewrite <-sx. now apply leq_infx_id.
-     right. apply inf_spec; intros t Tt. now apply F. 
- Qed.
-
-*)
-
-
-
 
 
 Section S_chain.
@@ -981,42 +927,24 @@ Section thm_no_subCPO.
 
 (* Now to prove that top_on_set is directed to take its sup which is a sup of P2 by Thm II *)
 
- Lemma directed_set_of_fun (Y : set X) (z : X) : (*Y z ->*) (*(is_subCPO Y) ->*) Directed leq (mon_fun_applied Y z).
-(* Proof idea : take composition *)
+ Lemma directed_set_of_fun (Y : set X) (z : X) :  Directed leq (mon_fun_applied Y z).
  Proof.
-  intros (*HYz*) (*Hs*) x y Hx Hy. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
-  destruct Hy as [hy [Hhy [hymon [hyinc [hyinv HYy]]]]].
-  (*destruct Hx as [hx Hx]. destruct Hy as [hy Hy].*)
-  exists (hx (hy z)). repeat split. exists (fun x => hx (hy x)).
-  + (*intro HYz.*) (*destruct Hx as [Hhx [hxmon [hxinc [hxinv HYx]]]].*)(*assumption.*)
-  (*destruct Hy as [Hhy [hymon [hyinc [hyinv HYy]]]].*) (*assumption.*) repeat split.
-  intros x0 y0 Hx0 Hy0 Hxy0. apply hxmon; try now apply hyinv. now apply hymon.
-  intros x0 Hx0. transitivity (hy x0). now apply hyinc. apply hxinc. now apply hyinv.
-  intros x0 Hx0. apply hxinv. now apply hyinv. assumption.
-  + transitivity (hx z). now rewrite <- Hhx. apply hxmon. assumption. now apply hyinv. now apply hyinc.
-  + rewrite <- Hhy. apply hxinc. rewrite Hhy. now apply hyinv.
-  
-  (*
-  destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
+  intros x y Hx Hy. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
   destruct Hy as [hy [Hhy [hymon [hyinc [hyinv HYy]]]]].
   exists (hx (hy z)). repeat split. exists (fun x => hx (hy x)).
   + repeat split.
   intros x0 y0 Hx0 Hy0 Hxy0. apply hxmon; try now apply hyinv. now apply hymon.
   intros x0 Hx0. transitivity (hy x0). now apply hyinc. apply hxinc. now apply hyinv.
-  intros x0 Hx0. apply hxinv. now apply hyinv. rewrite <- Hhy. now apply hxinv.
-  + transitivity (hx z). now rewrite <- Hhx. apply hxmon. assumption. now rewrite <- Hhy. apply hyinc. assumption.
-  + rewrite <- Hhy. now apply hxinc.*)
+  intros x0 Hx0. apply hxinv. now apply hyinv. assumption.
+  + transitivity (hx z). now rewrite <- Hhx. apply hxmon. assumption. now apply hyinv. now apply hyinc.
+  + rewrite <- Hhy. apply hxinc. rewrite Hhy. now apply hyinv.
  Qed.
  (*I'm actually surprised that we don't need Y to be a subCPO here...*)
 
  Program Definition fun_on_Y_subCPO (Y:set X) z (*(H : is_subCPO Y)*) (*(Hz : Y z)*) := exist (Directed leq) (mon_fun_applied Y z) _.
  Next Obligation. apply directed_set_of_fun. Defined.
  
- (*
- Lemma subCPO_contains_bot Y : is_subCPO Y -> Y bot.
- Proof. intro H. now apply H. Qed.
- *)
- 
+
  Lemma set_of_fun_is_subCPO Y (*(H : is_subCPO Y) *): is_subCPO Y ->
    mon_fun_applied Y bot (sup (fun_on_Y_subCPO Y bot (*H*) (*(subCPO_contains_bot H)*))).
  Proof. intro H.
@@ -1031,10 +959,6 @@ Section thm_no_subCPO.
 
  Variable F : mon.
 
-(*
- Program Definition fun_bot_on_P0 := exist (Directed leq) (mon_fun_applied (P0 F) bot) _.
- Next Obligation. apply directed_set_of_fun. Defined.
-*)
 
  Theorem Fixpoint_II_no_subCPO : exists x, Fix F x.
  Proof.
@@ -1055,20 +979,6 @@ Section thm_no_subCPO.
  + now apply P0_is_in_Post.
  Qed.
 
- (*
- apply antisym.
- + apply leq_xsup. exists (fun x => F (sup fun_bot_on_P0)). repeat split.
-  reflexivity. intros x Hx. transitivity (sup fun_bot_on_P0). (*apply leq_xsup.
-  exists (fun y => x). repeat split. reflexivity.
-  intros x y Hx Hy Hxy. reflexivity.*)
- admit.
-  now apply P0_is_in_Post.
-  
-  (*transitivity ((fun x => F (sup fun_bot_on_P0)) bot).*)
-  intros x Hx. apply P0_is_invariant_subCPO. now apply from_image.
- + now apply P0_is_in_Post.
- Admitted.
-*)
 
 End thm_no_subCPO.
 
