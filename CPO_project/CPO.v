@@ -46,17 +46,6 @@ Class B_param := { B : Type;
   
   Coercion B : B_param >-> Sortclass.
   Coercion TBody : valid_type >-> Sortclass.
-  
-  
-  (*
-  
-  cas fini:
-  Definition memo P := let l := List.filter P (el X) in
-                        fun x => "List.mem" x l.
-  
-  *)
-  
-
 
 Definition BEq `{B_param} PB1 PB2 := BAnd (BImpl PB1 PB2) (BImpl PB2 PB1).
 Lemma BEq_spec `{B_param} : forall b1 b2, (is_true b1 <-> is_true b2) <-> is_true (BEq b1 b2).
@@ -207,7 +196,7 @@ End Partial_order.
 Infix "°" := comp (at level 20): B_PO.
 
 
-Section sup.
+Section Sup.
 
   Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {P : B_CPO P'} {L : B_CL P'}.
 
@@ -251,7 +240,7 @@ Section sup.
   Lemma leq_xInf (D: X -> B) y:  is_true (D y) -> Inf D <= y.
   Proof. intro H. now apply Inf_spec with D. Qed.
 
-End sup.
+End Sup.
 
 #[global] Hint Resolve bot_spec: core.
 #[global] Hint Resolve Bot_spec: core.
@@ -341,7 +330,7 @@ Global Hint Resolve cup_l cup_r: core.
 
 (* Knaster-Tarski Theorem on Lattices *)
 
-Section lattice_results.
+Section Knaster_Tarski.
   Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {L : B_CL P'}.
   Variable b: mon.
 
@@ -379,11 +368,11 @@ Section lattice_results.
     + apply lfp_pfp.
   Qed.
 
-End lattice_results.
+End Knaster_Tarski.
 
 
 
-Section function.
+Section Function.
 
   Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {P : B_CPO P'}.
 
@@ -432,18 +421,7 @@ Section function.
       rewrite Hx. apply Fmon. now apply leq_xsup.
   Qed.
 
-(* Iterations of a function *)
 
-(*
-  Fixpoint iteres F (y : X) (is_bot_y : {y = bot} + {y <> bot}) : B := match is_bot_y with
-  | left _ => BTrue
-  | right _ => BExists (fun x => BAnd (weq y (F x)) (iteres F x))
-  end.
-  
-  | iteres_0 : (iteres F bot)
-  | iteres_S : forall x, (iteres F x) -> (iteres F (F x)).
-
-*)
   Fixpoint itere F n x0 : X :=
     match n with
     | 0 => x0
@@ -471,43 +449,7 @@ Section function.
     now apply Hbody'.
   Qed.
 
-
-(* TODO !
-  Definition iteres F : X -> B :=
-  | from_bot : forall n, iteres F (itere F n bot).
-
-  Lemma iteres_directed (F:mon): Directed (iteres F).
-  Proof.
-    unfold Directed. intros. destruct H. destruct H0.
-    destruct le_ge_dec with n n0.
-    + exists (itere F n0 bot). repeat split. now apply chain_increase. reflexivity.
-    + exists (itere F n bot). repeat split. reflexivity. now apply chain_increase.
-  Qed.
-
-  Variant iteres_from_1 F : X -> Prop :=
-  | from_bot_from_1 : forall n, le 1 n -> iteres_from_1 F (itere F n bot).
-
-  Lemma iteres_from_1_directed (F:mon): Directed leq (iteres_from_1 F).
-  Proof.
-    unfold Directed. intros. destruct H. destruct H0.
-    destruct le_ge_dec with n n0.
-    + exists (itere F n0 bot). repeat split. assumption. now apply chain_increase. reflexivity.
-    + exists (itere F n bot). repeat split. assumption. reflexivity. now apply chain_increase.
-  Qed.
-
-  Lemma image_of_iteres F : set_eq (Image F (iteres F)) (iteres_from_1 F).
-  Proof.
-    intro. split; intro; inversion H. inversion H0.
-    + assert (iteres_from_1 F (itere F (S n) bot)). apply from_bot_from_1. lia.
-      apply H3.
-    + induction n. contradict H0. lia.
-      cbn. apply from_image. apply from_bot.
-  Qed.
-
-  Lemma from_1_included F : included (iteres_from_1 F) (iteres F).
-  Proof. intros x H. inversion H. apply from_bot. Qed.
-*)
-End function.
+End Function.
 
 
 
@@ -810,6 +752,9 @@ Section Increasing_fixpoint.
   Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {P : B_CPO P'}.
 
   Definition Increasing F := BForall X (fun x => leq x (F x)).
+(* All the below work in this section, on the CPO of Monotonous function on a CPO is unused.
+  We had to find a way to not need to define a subset as a CPO, cf "mon_fun_applied".
+  This is to avoid defining type-dependent objects in our truth values B. *)
   Definition Increasing_restricted Y F := BAnd (Invariant F Y) (BForall X (fun x => BImpl (Y x) (leq x (F x)))).
 
   Definition leq_mon f g := (@leq B valid_mon_type B_PO_mon f g).
@@ -834,8 +779,6 @@ Section Increasing_fixpoint.
    now fold_leq.
    cbn in H. rewrite <- BForall_spec in H. apply H. 
   Qed.
-  
-  (*Check H_sup.*)
 
   Lemma H_sup_bot_is_fixpoint_of_all_Increasing (F:mon) :
     is_true (Increasing F) -> is_true (Fix F ((FBody H_sup) bot)).
@@ -859,7 +802,7 @@ End Increasing_fixpoint.
 
 
 
-Section Fixpoints.
+Section Fixpoint_II.
   Context {B : B_param} {X : valid_type} {P' : @B_PO B X} {P : B_CPO P'}.
 
   Definition is_least S x := is_true (S x) /\ forall y, is_true (S y) -> x <= y.
@@ -868,15 +811,6 @@ Section Fixpoints.
   Definition is_greatest S x := is_true (S x) /\ forall y, is_true (S y) -> y <= x.
   Definition is_maximal S x := is_true (S x) /\ forall y, is_true (S y) -> x <= y -> y == x.
   Definition is_sup S x := forall z, (forall y, is_true (S y) -> y <= z) <-> x <= z.
-
-(*
-  Lemma test_coherence1 : forall (D : directed_set _), is_sup D (sup D).
-  Proof. intros D z. split; apply sup_spec. Qed.
-  Lemma test_coherence2 : forall (D : directed_set _),
-      D (sup D) ->
-      is_greatest D (sup D).
-  Proof. intros. split. assumption. now apply sup_spec. Qed.
-*)
 
 
   Variable F:mon.
@@ -913,7 +847,6 @@ Section Fixpoints.
     - unfold Post. fold_leq. intro Hx. fold_leq. now rewrite H.
       + now apply P0_is_smallest_invariant_subCPO.
   Qed.
-  (* Note : contrarily to the book, here P0' was never used, neither was phi. *)
 
   Lemma P0_is_in_down x : is_true (Fix F x) -> is_true (included (P0 F) (down x)).
   Proof.
@@ -1038,7 +971,7 @@ Section Fixpoints.
  Qed.
 
 
-End Fixpoints.
+End Fixpoint_II.
 
 
 

@@ -584,39 +584,6 @@ End Basic_CPOs.
 
 
 
-
-
-
-Section CPO_based_Truth_values.
-
- Context {B0 : B_param} {X0 : valid_type} `{P : B_CPO (B := B0) (X := X0)}.
-
-
-(*
- Program Instance CPO_B : B_param :=
-  {|
-    B := X;
-    K := K;
-    is_true x := is_true (weq x Top);
-    BFalse := Bot;
-    BAnd := cap;
-    BOr := cup;
-    BImpl x1 x2 := Inf (fun x => BAnd (leq x2 x) (BImpl (leq x1 x) (BFalse))); 
-    (* x1 -> x2 ssi x1 <= x2, i.e l'ensemble ci-dessus est vide. Sinon la valeur de vérité est "x2".
-    Pas ouf, mais je ne vois pas trop ce qu'on pourrait vouloir mettre comme valeur de vérité.*)
-    
-    BForall := fun P => ??? ;
-    BExists := fun P => ???;
-  |}.
-*)
-
-End CPO_based_Truth_values.
-
-
-
-
-
-
 Section CPO_Examples.
 
 Variant CPO_set : Type := bottom : CPO_set | x1 : CPO_set | x2 : CPO_set.
@@ -810,18 +777,19 @@ set (x := @lfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon).
 easy.
 Qed.
 
+  Program Definition id_P : @mon Prop_B _ B_PO_Prop := id.
+  Goal True.
+  set (x := @lfp_II Prop_B _ B_PO_Prop B_CPO_Prop id_P).
+  vm_compute in x.
+  easy.
+  Qed.
+
 End CPO_Examples.
 
 
 
 
-
-
-
-
-
-
-Section CPO_based_Truth_values2.
+Section CPO_based_Truth_values.
 
  Notation top := x2.
  Notation unknown := x1.
@@ -1004,7 +972,7 @@ Program Instance CPO_B_False : B_param :=
   
   *)
 
-End CPO_based_Truth_values2.
+End CPO_based_Truth_values.
 
 (*
 Lemma notnotand : forall P Q, ~~ (P /\ Q) <-> ~~ P /\ ~~ Q.
