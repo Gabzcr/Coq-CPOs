@@ -35,6 +35,7 @@
 \usetikzlibrary{shapes}
 
 \usepackage{hyperref}
+\newcommand{\yz}[1]{\textcolor{blue}{{[YZ:~#1]}}}
 
 
 \title{Rapport de stage M2 \\ 
@@ -64,9 +65,20 @@ Ces résultats sont utiles à de nombreux domaines de l'informatique, comme la s
 Au cours de mon stage, j'ai développé une telle bibliothèque autonome et indépendante, articulée notamment autour du chapitre 8 de %TODO reciter le bouquin.
 La bibliothèque a été construite progressivement en testant différentes formalisations et paramétrisations, dans le but d'englober le plus possible de structures et d'utilisations différentes en un même outil très général. Le code de la bibliothèque, que j'ai intégralement produit, se trouve au lien suivant : \href{https://github.com/Gabzcr/Coq-CPOs/tree/master}{https://github.com/Gabzcr/Coq-CPOs/tree/master}.
 
+\yz{Soit en début de la section «présentation du domaine de recherche», soit
+  dans cette \og introduction \fg générale, il manque un truc tout bête : ce
+  qu'est un point fixe ; pourquoi l'on s'intéresse couramment à ceux-ci ;
+  remarquer et donner un exemple illustrant qu'un tel point fixe n'existe pas
+  forcément, ou qu'il peut en exister plusieurs ; et donc expliquer que tu vas
+  te placer dans un cadre standard où l'on peut garantir qu'un tel point fixe
+  existe, et où l'on a des méthodes pour en calculer un particulier.}
+
+\yz{Expliquer peut-être aussi dès à présent que tu vas t'intéresser à des résultats standards,
+mais sous trois loupes : la formalisation, les axiomes minimaux que leur preuve
+requiert, et le contenu calculatoire de leur preuve pour en dériver un
+algorithme effectif certifié}
+
 \tableofcontents
-
-
 
 \section{Présentation du domaine de recherche}
 
@@ -100,7 +112,9 @@ Rappelons également rapidement les notions de borne supérieure (abrégée en s
 \begin{definition}{\textbf{sup et inf : }}
 Soit $P$ un ensemble ordonné et $S \subseteq P$. La borne supérieure de $S$, si elle existe, est le plus petit des majorants de $S$. La borne inférieure est le plus grand des minorants (si elle existe).
 
-De manière équivalente, $S$ a un sup si et seulement si : ~ $\forall y \in P, [(\forall s \in S, s \leq y) \Longleftrightarrow x \leq y]$.
+De manière équivalente, $S$ a un sup si et seulement si : ~ $\forall y \in P,
+[(\forall s \in S, s \leq y) \Longleftrightarrow x \leq y]$.\yz{Ton x est libre
+  dans cette formule, préciser que c'est le sup en question}
 
 S'ils existent, on note $\bigvee S$ le sup de $S$ et $\bigwedge S$ l'inf de S.
 \end{definition}
@@ -121,7 +135,14 @@ On dit qu'un ensemble ordonné $P$ est un CPO si :
 (ii) $\bigsqcup D$ existe pour tout sous-ensemble dirigé $D$ de $P$.
 \end{definition}
 
-Dans la littérature, on trouve de nombreuses variantes des définitions ci-dessus. Notez que contrairement à la définition classique d'un ensemble dirigé, comme celle donnée dans le livre qui me sert de référence, ici j'autorise l'ensemble vide comme étant un ensemble dirigé. Ainsi je peux restreindre la définition de CPO au seul point (ii), car le sup de l'ensemble vide donne bottom par la définition de la borne supérieure : $\bigsqcup \emptyset = \bot$.
+Dans la littérature, on trouve de nombreuses variantes des définitions
+ci-dessus. Notez que contrairement à la définition classique d'un ensemble
+dirigé, comme celle donnée dans le livre qui me sert de référence, ici
+j'autorise l'ensemble vide comme étant un ensemble dirigé. Ainsi je peux
+restreindre la définition de CPO au seul point (ii), car le sup de l'ensemble
+vide donne bottom par la définition de la borne supérieure : $\bigsqcup
+\emptyset = \bot$.\yz{Du coup peut-être poser ta déf comme ii et faire remarquer
+que cela implique (i) dans ton setup ?}
 
 Par ailleurs, certains auteurs n'imposent pas du tout l'existence d'un élément bottom dans $P$ et parlent plutôt de \textbf{CPO pointé} ("dcppo") lorsque bottom existe. À l'inverse, on peut parler de \textbf{pré-CPO} (dcpo) lorsqu'on veut laisser les considérations d'existence de l'élément bottom de côté, ou retirer $\bot$ de la structure de CPO. %TODO : citer le bouquin, page 175.
 
@@ -129,7 +150,9 @@ Dans tout ce projet, on ne travaillera jamais avec des pré-CPO, toujours avec d
 
 \paragraph{}
 
-Une structure dans le prolongement de celle de CPO, plus restrictive et plus forte, est celle du treillis complet.
+Une structure dans le prolongement de celle de CPO, plus restrictive et plus
+forte \yz{Un peu étrange d'utiliser ces deux adjectifs : ils sont informels,
+  mais aussi moralement synonymes dans ce contexte non ? Parler plus simplement d'une sous-classe de CPOs?}, est celle du treillis complet.
 
 \begin{definition}{\textbf{Treillis complet}}
 Soit $P$ un ensemble ordonné non vide. $P$ est un treillis complet si $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq P$ quelconque.
@@ -142,9 +165,10 @@ Notez qu'un treillis complet est en particulier un CPO.
 
 Maintenant que nous avons redéfini les notions et les structures qui constitueront la base de la bibliothèque, voyons les principaux résultats de points fixes construits sur ces structures.
 
-Les différents théorèmes suivants statuent de l'existence d'un point fixe d'une fonction $F : P -> P$ sous différentes conditions plus ou moins fortes, où $P$ est un ensemble ordonné. Commençons par rappeler quelques propriétés sur les fonctions, qui formeront des hypothèses aux théorèmes ci-dessous.
+Les différents théorèmes suivants statuent de l'existence d'un point fixe d'une fonction $F : P \rightarrow P$ sous différentes conditions plus ou moins fortes, où $P$ est un ensemble ordonné. Commençons par rappeler quelques propriétés sur les fonctions, qui formeront des hypothèses aux théorèmes ci-dessous.
 
 \begin{definition}{\textbf{Point fixe d'une fonction\\}}
+  \yz{Ne devrais-tu pas considérer un endo de P dans P dans cette définition ?}
 Soient $(P, \leq_P)$ et $(Q, \leq_Q)$ deux ensembles ordonnés, $F : P \rightarrow Q$ une fonction et $x \in P$. 
 
 $x$ est un point fixe de $F$ si $F(x) = x$.
@@ -194,8 +218,15 @@ Soient $P$ un CPO et $F : P \rightarrow P$ une fonction monotone sur $P$. Posons
 Soient $P$ un CPO et $F : P \rightarrow P$ une fonction monotone. Alors $F$ a un plus petit point fixe.
 \end{theorem}
 
-Comme nous le développerons plus tard dans ce rapport, le théorème de Pataraia a la particularité très intéressante d'avoir une preuve entièrement calculable, qui fournit une formule et une méthode pour déterminer le point fixe en question. %TODO citer la partie qui développe ça, probablement 3.2 sur la preuve de Pataraia
-Ceci est notamment utile pour Coq, car il fournit une théorème qui permet de simplifier et calculer concrètement un point fixe, en particulier sur un CPO fini.
+Comme nous le développerons plus tard dans ce rapport, le théorème de Pataraia a
+la particularité très intéressante d'avoir une preuve entièrement calculable
+\yz{Contraster en expliquant en quoi le théorème I échoue à cela}, qui fournit une formule et une méthode pour déterminer le point fixe en question. %TODO citer la partie qui développe ça, probablement 3.2 sur la preuve de Pataraia
+Ceci est notamment utile pour Coq, car il \yz{qui?} fournit un théorème qui
+permet de simplifier et calculer concrètement un point fixe, en particulier sur
+un CPO fini. \yz{Je pense qu'il va falloir être un peu plus pédagogique vis à
+  vis de tout cela: l'idée d'extraire un algorithme certifié de calcul de point
+  fixe, le lien avec l'aspect intuitioniste de la preuve, une explication sur
+  pourquoi bien qu'intuitioniste cela ne suffit pas pour théorème I}
 
 Notez que le théorème II implique le théorème I, puisqu'une fonction continue est monotone.
 
@@ -268,6 +299,9 @@ Contrairement à ce qui y est écrit, $F$ n'a pas forcément de point fixe \emph
 \caption{Fonction F progressive sur un CPO, sans point fixe minimal}
 \end{figure}
 %Énoncer ici les trois théorèmes de point fixe sur lesquels j'ai passé à peu près la moitié du stage. (Point de vue mathématique pour l'instant ? Le Coq viendra plus tard.)
+\yz{Peut-être un tableau avec les quatres théorèmes en ligne, et hypothèse sur
+  P, hypothèses sur F, classique/intuitioniste, formule effective ou non comme
+  colonnes ?}
 
 \newpage
 
@@ -311,7 +345,22 @@ Il contient également un contre-exemple à l'erreur du livre prouvé en Coq, vi
 Parmi les différentes façon possibles de définir les structures ordonnées, on recherche une formalisation qui respecte certains critères.
 
 \paragraph{Universalité :\\}
+\yz{J'aurais tendance à dire que cela devrait venir probablement déjà bien avant
+dans le rapport, dans une explication des enjeux, mais il faut en tout cas avant
+cela expliquer ce qu'est Prop et en quoi il diffère de bool}
 
+\yz{Globalement je pense que ce paragraphe est très difficile à lire pour une
+  personne extérieure à tout cela, il y a pas mal de notions pas définies.
+  Il faut probablement d'abord prendre un peu
+  de temps pour expliquer que l'enjeu dont tu parles ici est de choisir
+  la formalization en Coq de l'axiomatisation des champs constitutifs d'un CPO
+  comme décrit en Section 1.1 (l'idée même que tu puisses demander de leq d'être
+  calculable ou non, etc..., par exemple est quelque chose qui n'est pas évident pour
+  quelqu'un non familier avec Coq). Arriver à l'idée que l'on peut contraindre plus
+  ou moins de contenu calculatoire à ces champs. Puis transiter vers ce qu'est
+  en Coq une proposition, et en quoi il peut être vu comme un CPO. de même avec
+  bool, et alors pointer du doigt les tensions opposées qu'ils font porter sur
+  la structure.}
 Le premier critère, et le plus important de tous, est que nos structures englobent bien tous les objets mathématiques qui correspondent à notre définition. Par exemple, dans le cas des treillis complets (ou des CPOs), on veut pouvoir définir l'ensemble des Propositions dans Coq comme étant un treillis complet, dont la relation $P \leq Q$ est donnée par $P \rightarrow Q$ et le sup d'un ensemble $\mathcal{P}$ est donné par $\bigvee \mathcal{P} = \exists P \in \mathcal{P}, P$. 
 
 Mais on veut également pouvoir définir de petites structures, comme par exemple le treillis complet des booléens \{\code{true}, \code{false}\} avec \code{false} $\leq$ \code{true}, ou n'importe quel treillis fini. Ici, la formalisation usuelle d'un sous-ensemble $S \subseteq X$ dans Coq ne le permet pas. Dans ce cas, $S$ est vu comme une fonction \code{S : X -> Prop}. %$S : X \rightarrow Prop$.
@@ -324,7 +373,7 @@ Notez que décider une proposition est encore plus fort que de supposer le tiers
 forall (P : Prop), P \/  (P -> False)
 \end{coq}
 
-Mais ne sait pas déterminer en dehors d'un environnement de preuve lequel des deux côté du "\/" est vérifié. Nous aurions plutôt besoin du résultat suivant, bien plus contraignant, et qui permet de matcher vers l'un ou l'autre des résultats :
+Mais ne sait pas déterminer en dehors d'un environnement de preuve lequel des deux côté du $\lor$ est vérifié. Nous aurions plutôt besoin du résultat suivant, bien plus contraignant, et qui permet de matcher vers l'un ou l'autre des résultats :
 
 \begin{coq}
 forall (P : Prop), { P } + {P -> False}
