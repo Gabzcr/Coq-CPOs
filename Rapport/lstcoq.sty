@@ -1,0 +1,144 @@
+% lstlisting coq style (inspired from a file of Assia Mahboubi)
+%
+
+\lstdefinelanguage{Coq}{
+%
+% Anything betweeen $ becomes LaTeX math mode
+mathescape=true,
+%
+% Upshape single quotes
+upquote=true,
+%
+% Comments may or not include Latex commands
+texcl=false,
+%
+% Vernacular commands
+morekeywords=[1]{Section, Module, End, Require, Import, Export,
+  Variable, Variables, Parameter, Parameters, Axiom, Hypothesis,
+  Hypotheses, Notation, Local, Tactic, Reserved, Scope, Open, Close,
+  Bind, Delimit, Definition, Let, Ltac, Fixpoint, CoFixpoint, Add,
+  Morphism, Relation, Implicit, Arguments, Unset, Contextual,
+  Strict, Prenex, Implicits, Inductive, CoInductive, Record,
+  Structure, Canonical, Coercion, Context, Class, Global, Instance,
+  Program, Infix, Theorem, Lemma, Corollary, Proposition, Fact,
+  Remark, Example, Proof, Goal, Save, Qed, Defined, Hint, Resolve,
+  Rewrite, View, Search, Show, Print, Printing, All, Eval, Check,
+  Projections, inside, outside, Def, Compute, Abort, Next, Obligation},
+%
+% Gallina
+morekeywords=[2]{forall, exists, exists2, fun, struct,
+  match, with, end, as, in, return, let, if, is, then, else, for, of,
+  nosimpl, when},
+%
+% Sorts
+morekeywords=[3]{Type, Prop, Set, true, false},
+%
+% types
+morekeywords=[4]{unit, bool, nat, list, stream},
+% tactics
+morekeywords=[4]{pose, set, move, case, elim, apply, clear, hnf,
+  intro, intros, generalize, rename, pattern, after, destruct,
+  induction, coinduction, fix, cofix, cbn, using, refine, inversion, injection, rewrite, congr,
+  unlock, compute, ring, field, fourier, replace, fold, unfold,
+  change, cutrewrite, simpl, have, suff, wlog, suffices, without,
+  loss, nat_norm, assert, cut, trivial, revert, bool_congr, nat_congr,
+  symmetry, transitivity, auto, split, left, right, autorewrite},
+%
+% Terminators
+morekeywords=[5]{by, done, exact, reflexivity, tauto, romega, omega,
+  assumption, solve, contradiction, discriminate, now, lia, nia},
+%
+% Control
+morekeywords=[6]{do, last, first, try, idtac, repeat},
+%
+% Comments delimiters
+morecomment=[s]{(*}{*)},
+morecomment=[l][\ttfamily\color{dkred}]{>},
+%
+% Spaces are not displayed as a special character
+showstringspaces=false,
+%
+% String delimiters
+% morestring=[b]",
+% morestring=[d],
+%
+% Size of tabulations
+tabsize=3,
+%
+% Enables ASCII chars 128 to 255
+extendedchars=false,
+%
+% Case sensitivity
+sensitive=true,
+%
+% Automatic breaking of long lines
+breaklines=false,
+%
+% Default style fors listings
+basicstyle=\normalsize,
+%
+% Position of captions is bottom
+captionpos=b,
+%
+% flexible columns
+columns=fixed,
+%
+% Style for (listings') identifiers
+identifierstyle={\ttfamily\color{black}},
+% Style for declaration keywords
+keywordstyle=[1]{\ttfamily\color{dkviolet}},
+% Style for gallina keywords
+keywordstyle=[2]{\ttfamily\color{dkgreen}},
+% Style for sorts keywords
+keywordstyle=[3]{\ttfamily\color{ltblue}},
+% Style for tactics keywords
+keywordstyle=[4]{\ttfamily\color{dkblue}},
+% Style for terminators keywords
+keywordstyle=[5]{\ttfamily\color{red}},
+%Style for iterators
+%keywordstyle=[6]{\ttfamily\color{dkpink}},
+% Style for strings
+% stringstyle=\ttfamily,
+% Style for comments
+commentstyle={\ttfamily\color{dkgreen}},
+%
+%moredelim=**[is][\ttfamily\color{red}]{/&}{&/},
+literate=
+    {\\forall}{{{\color{dkgreen}$\forall$}}}1
+    {\\exists}{{{\color{dkgreen}$\exists$}}}1
+    {<-}{{$\leftarrow$}}2
+    {=>}{{$\Rightarrow$}}2
+    {==}{$\simeq$}2
+    {=.=}{{==}}2
+    {===}{$\cong$}2
+    {====}{$\equiv$}2
+    {=======}{{=======}}7
+    {==>}{{\tt ==>}}3
+    {->}{{$\rightarrow$}}2
+    {<->}{{$\leftrightarrow$}}3
+    % {^*}{{$^\star$}}1
+    % {~}{{$\,\sim\;\;$}}1
+    % {+}{{$\,+\,$}}1
+    {\\\/}{{$\lor$}}3
+    {\/\\}{{$\land$}}3
+    {\\dagger}{{$^\dagger$}}1
+    {\\subseteq}{{$\subseteq$}}2
+    {[spc]}{{$\;$}}2
+    {::}{${:}{:}$}2
+    {:::}{${:}{:}{:}$}3
+    {++}{${+\!\!+}$}2
+%
+}[keywords,comments]
+
+\lstnewenvironment{coq}[1][]{\lstset{language=Coq,#1}}{}
+
+% pour inliner dans le texte
+\def\inlinecoq{\lstinline[language=Coq, basicstyle=\normalsize]}
+% pour inliner dans les tableaux / displaymath...
+\def\inlinescoq{\lstinline[language=Coq, basicstyle=\small]}
+
+%%% Local Variables:
+%%% mode: latex
+%%% Local IspellDict: british
+%%% TeX-master: "chapter05"
+%%% End:
