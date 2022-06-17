@@ -980,7 +980,7 @@ Section Fixpoints.
 End Fixpoints.
 
 
-(** * Theorem III : Bourbaki-Witt theorem. This theorem requires classic logic, it is false in intuitionist logic. *)
+(** * Theorem III : Bourbaki-Witt theorem. This theorem requires classic logic, it is not provable in intuitionist logic. *)
 
 Section Bourbaki_Witt.
 
@@ -1080,7 +1080,7 @@ Next Obligation. apply P0_is_directed; intuition. apply H. Qed. *)
 
   (*The book is wrong : the top of P0 is not necessarily minimal (cf counterexample on paper)
 However, from an existing fix point, it seems we can deduce a minimal fix point since the set of
-fixpoints between bottom and our fix point is a chain. TODO ? *)
+fixpoints between bottom and our fix point is a chain. *)
   Theorem Fixpoint_III (F' : X -> X) (C : correct_set) : classic_axiom -> (Proper (weq ==> weq) F') -> Increasing F' -> exists x, Fix F' x(*is_minimal (Fix F') x*).
   Proof.
     intros EM Fp HF. destruct (sup_exists (exist _ (P0 F') (P0_is_directed C EM Fp HF))) as [a Ha].

@@ -912,8 +912,6 @@ Qed.
 End S_chain.
 
 
-
-
 Section thm_no_subCPO.
 
  Context {X} `{P: CPO X}.
