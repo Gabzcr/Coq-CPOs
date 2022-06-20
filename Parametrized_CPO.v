@@ -17,7 +17,11 @@ Class B_param (B : Type) := {
   BOr_spec : forall b1 b2, is_true b1 \/ is_true b2 <-> is_true (BOr b1 b2);
   BImpl : B -> B -> B;
   BImpl_spec : forall b1 b2, (is_true b1 -> is_true b2) <-> (is_true (BImpl b1 b2));
+  
+  (*BIs (A : Type) :*)
   }.
+
+Print eq.
 
 Definition BEq `{B_param} PB1 PB2 := BAnd (BImpl PB1 PB2) (BImpl PB2 PB1).
 Lemma BEq_spec `{B_param} : forall b1 b2, (is_true b1 <-> is_true b2) <-> is_true (BEq b1 b2).
@@ -40,9 +44,16 @@ Class B_param_plus (B : Type) (X : Type) `(B_param B) := {
   BExists_set : ((X -> B) -> B) -> B; (*needed for the Complete Lattice of parts/subsets, and definition of P0*)
   BExists_set_spec : forall (P : (X -> B) -> B), (exists S, is_true (P S)) <-> is_true (BExists_set P);
   
+  BExists_fun : ((X -> X) -> B) -> B;
+  BExists_fun_spec : forall (P : (X -> X) -> B), (exists f, is_true (P f)) <-> is_true (BExists_fun P);
+  
   
   BExists_nat : (nat -> B) -> B;
   BExists_nat_spec : forall (P : nat -> B), (exists n, is_true (P n)) <-> is_true (BExists_nat P);
+  
+  (*BIs : X -> X -> B;
+  BIs_spec : forall x y, x = y <-> is_true (BIs x y);*)
+  
   (*
   BForall_g (A:Type) : (A -> B) -> (A -> B) -> B; (*here I is to select only a subset of A according to some condition B
     and bfun is the property that need to be true for all element in that subset *)
@@ -62,7 +73,9 @@ Ltac unfold_spec := try repeat (setoid_rewrite <- BAnd_spec)
                             || (setoid_rewrite <- BForall_spec)
                             || (setoid_rewrite <- BExists_spec)
                             || (setoid_rewrite <- BForall_set_spec)
-                            || (setoid_rewrite <- BExists_set_spec).
+                            || (setoid_rewrite <- BExists_set_spec)
+                            || (setoid_rewrite <- BExists_fun_spec)
+                            (*|| (setoid_rewrite <- BIs_spec)*).
 
 Section CPO_CL.
 
@@ -632,6 +645,7 @@ Section Particular_CPOs.
 
 (* Doesn't work : requires dependent pair in B :'( *)
 
+(*
   Definition set_type (Y : X -> B) : Type := { x : X | is_true (Y x)}.
   Definition element Y (y :set_type Y) := proj1_sig y.
   #[global] Coercion element : set_type >-> X.
@@ -668,7 +682,7 @@ Section Particular_CPOs.
       now exists y.
       + intros. apply sup_spec. cbn. intros. destruct H1. now apply (H0 (exist (fun x : X => Y x) y x)).
   Qed.
-
+*)
 
   (* Some instances that can now be defined on CPO_parts and CPO_mon. *)
 
@@ -708,28 +722,39 @@ Section Invariant_subCPOs.
   Variable F : X -> X.
 
   Definition P0 x :=  (*P0 is the smallest invariant subCPO : intersection of all invariant sub_CPOs.*)
-    BForall_set (fun Y => BImpl (Invariant F Y) (BImpl (is_subCPO Y) (Y x))).
-  Hypothesis fun_ext : forall x y, x == y -> is_true (P0 x) <-> is_true (P0 y). (* need functional extensionality *)
+    BForall_set (fun Y => BImpl (Invariant F Y) (BImpl (is_subCPO Y) (BImpl 
+      (BForall (fun x => BForall (fun y => BImpl (weq x y) (BEq (Y x) (Y y))))) 
+      (Y x)))).
   
-  Lemma P0_spec : forall x, (forall Y, is_true (Invariant F Y) -> is_true (is_subCPO Y) -> is_true (Y x)) <-> is_true (P0 x).
-  Proof. setoid_rewrite <- BForall_set_spec. repeat setoid_rewrite <- BImpl_spec. tauto. Qed.
+  Lemma P0_spec : forall x, (forall Y, is_true (Invariant F Y) -> is_true (is_subCPO Y) 
+    -> (forall x y, x == y -> is_true (Y x) <-> is_true (Y y))
+    -> is_true (Y x)) <-> is_true (P0 x).
+  Proof. unfold_spec. tauto. Qed.
+  
+  Lemma fun_ext : forall x y, x == y -> is_true (P0 x) <-> is_true (P0 y).
+  Proof.
+    intros x y Hxy. split; intro H; rewrite <- P0_spec; intros Y Hi Hs HP; rewrite HP.
+      rewrite <- P0_spec in H; apply H; try assumption. now symmetry.
+      rewrite <- P0_spec in H; apply H; try assumption. now symmetry.
+  Qed.
 
   Lemma P0_is_invariant_subCPO : is_true (Invariant F P0) /\ is_true (is_subCPO P0).
   Proof.
     split.
     + apply BForall_spec. setoid_rewrite <- BImpl_spec. intros x H.
       unfold Image in H. rewrite <- BExists_spec in H. destruct H as [x0 H]. rewrite <- BAnd_spec in H.
-      apply fun_ext with (F x0). apply H. rewrite <- P0_spec. intros Y Hi Hs. destruct H. rewrite <- P0_spec in H.
+      apply fun_ext with (F x0). apply H. rewrite <- P0_spec. intros Y Hi Hs HP. destruct H. rewrite <- P0_spec in H.
       unfold Invariant in Hi. rewrite included_spec in Hi. apply Hi. apply BExists_spec. exists x0.
-      apply BAnd_spec. split. apply H. apply included_spec. apply Hi. apply Hs.
+      apply BAnd_spec. split. apply H. apply included_spec. apply Hi. apply Hs. apply HP.
       now fold_weq.
-    + apply is_subCPO_spec. intros D H. rewrite <- P0_spec. intros Y Hi Hs. rewrite <- is_subCPO_spec in Hs. apply Hs.
+    + apply is_subCPO_spec. intros D H. rewrite <- P0_spec. intros Y Hi Hs HP. rewrite <- is_subCPO_spec in Hs. apply Hs.
       rewrite included_spec. rewrite included_spec in H. intros x Hx. specialize H with x. 
-      apply H in Hx. rewrite <- P0_spec in Hx. apply Hx. apply Hi. apply is_subCPO_spec. apply Hs.
+      apply H in Hx. rewrite <- P0_spec in Hx. apply Hx. apply Hi. apply is_subCPO_spec. apply Hs. apply HP.
   Qed.
 
-  Lemma P0_is_smallest_invariant_subCPO : forall Y, is_true (Invariant F Y) -> is_true (is_subCPO Y) -> is_true (included P0 Y).
-  Proof. intros Y Hi Hs. apply included_spec. intros x Hx. rewrite <- P0_spec in Hx. now apply Hx. Qed.
+  Lemma P0_is_smallest_invariant_subCPO : forall Y, is_true (Invariant F Y) -> is_true (is_subCPO Y)
+    -> (forall x y, x == y -> is_true (Y x) <-> is_true (Y y)) -> is_true (included P0 Y).
+  Proof. intros Y Hi Hs HP. apply included_spec. intros x Hx. rewrite <- P0_spec in Hx. now apply Hx. Qed.
 
 End Invariant_subCPOs.
 
@@ -796,7 +821,6 @@ Section Increasing_fixpoint.
     -> exists x, is_true (Fix F x).
   Proof.
     intro. exists (H_sup bot). apply H_sup_bot_is_fixpoint_of_all_Increasing.
-
 Faux, il faut vraiment se restreindre à Y *)
 
 End Increasing_fixpoint.
@@ -840,25 +864,33 @@ Section Fixpoints.
 
   Lemma P0_is_in_Post : is_true (included (P0 F) (Post F)).
   Proof.
-    assert (is_true (Invariant F (Post F)) /\ is_true (is_subCPO (Post F))).
-    + split.
+    assert (is_true (Invariant F (Post F)) 
+         /\ is_true (is_subCPO (Post F)) 
+         /\ (forall x y, x == y -> is_true ((Post F) x) <-> is_true ((Post F) y))).
+    + repeat split.
     - apply BForall_spec. setoid_rewrite <- BImpl_spec. intros x H.
       setoid_rewrite <- BExists_spec in H. setoid_rewrite <- BAnd_spec in H. destruct H as [x0 [Px0 Fx]].
       unfold Post. fold_leq. rewrite Fx. apply Hbody. apply Px0.
     - apply is_subCPO_spec. setoid_rewrite included_spec. intros D H. apply sup_spec. intros.
       transitivity (F y). now apply H. apply Hbody. now apply leq_xsup.
+    - unfold Post. fold_leq. intro Hx. fold_leq. now rewrite <- H.
+    - unfold Post. fold_leq. intro Hx. fold_leq. now rewrite H.
       + now apply P0_is_smallest_invariant_subCPO.
   Qed.
   (* Note : contrarily to the book, here P0' was never used for now, neither was phi. *)
 
   Lemma P0_is_in_down x : is_true (Fix F x) -> is_true (included (P0 F) (down x)).
   Proof.
-    intro. assert (is_true (Invariant F (down x)) /\ is_true (is_subCPO (down x))).
-    + split.
+    intro. assert (is_true (Invariant F (down x)) 
+                /\ is_true (is_subCPO (down x))
+                /\ (forall z y, z == y -> is_true ((down x) z) <-> is_true ((down x) y))).
+    + repeat split.
     - unfold_spec. (*apply BForall_spec. setoid_rewrite <- BImpl_spec. setoid_rewrite <- BExists_spec.*)
       intros y Hy. destruct Hy as [x0 [Dx0 Fyx0]]. unfold down. fold_leq. unfold Fix in H.
       rewrite <- H. rewrite Fyx0. apply Hbody. apply Dx0.
     - apply down_is_subCPO.
+    - unfold down. fold_leq. intro Hzx. fold_leq. now rewrite <- H0.
+    - unfold down. fold_leq. intro Hzx. fold_leq. now rewrite H0.
       + now apply P0_is_smallest_invariant_subCPO.
   Qed.
 
@@ -867,34 +899,129 @@ Section Fixpoints.
   Program Instance P0_PO : B_PO (set_type (P0 F)) := (subPO _).
   Program Instance P0_CPO : CPO P0_PO := (subCPO _).
   Next Obligation. apply P0_is_invariant_subCPO. Qed.
-
   Program Definition F_restricted_to_P0 : mon :=
     {| body := fun y => (exist _ (F y) _) |}.
   Next Obligation. destruct y as [x Hx]; cbn. apply P0_is_invariant_subCPO. now apply from_image. Qed.
   Next Obligation. intros y1 y2 H12; cbn. now apply Hbody. Qed.
 *)
 
+
+
+
+
+
+(* ------ Dodging subCPOs ------ *)
+
+ Definition mon_fun_applied (Y : X -> B) (z : X) (x0 : X) := 
+  BExists_fun (fun h => BAnd (weq x0 (h z)) 
+                       (BAnd (BForall (fun x => BForall (fun y => BImpl (Y x) (BImpl (Y y) (BImpl (leq x y) (leq (h x) (h y))) ))))
+                       (BAnd (BForall (fun x => BImpl (Y x) (leq x (h x))))
+                       (BAnd (BForall (fun x => BImpl (Y x) (Y (h x))))
+                       (Y z))))).
+ 
+ Lemma mon_fun_spec (Y : X -> B) (z : X) :
+  forall x0, (exists (h : X -> X), is_true (weq x0 (h z))
+                                /\ (forall x y, is_true (Y x) -> is_true (Y y) -> is_true (leq x y) -> is_true (leq (h x) (h y))) (* h monotonous *)
+                                /\ (forall x, is_true (Y x) -> is_true (leq x (h x))) (* h increasing *)
+                                /\ (forall x, is_true (Y x) -> is_true (Y (h x)))  (* h well defined on Y *)
+                                /\ is_true (Y z))
+  <-> is_true (mon_fun_applied Y z x0).
+ Proof.
+ unfold mon_fun_applied. unfold_spec. intuition. Qed.
+
+ Lemma directed_set_of_fun (Y : X -> B) (z : X) : is_true (Directed leq (mon_fun_applied Y z)).
+ Proof.
+  rewrite <- Directed_spec. repeat setoid_rewrite <- mon_fun_spec.
+  intros x y Hx Hy. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
+  destruct Hy as [hy [Hhy [hymon [hyinc [hyinv HYy]]]]].
+  (*destruct Hx as [hx Hx]. destruct Hy as [hy Hy].*)
+  exists (hx (hy z)). repeat split. exists (fun x => hx (hy x)).
+  + (*intro HYz.*) (*destruct Hx as [Hhx [hxmon [hxinc [hxinv HYx]]]].*)(*assumption.*)
+  (*destruct Hy as [Hhy [hymon [hyinc [hyinv HYy]]]].*) (*assumption.*) repeat split.
+  fold_weq. reflexivity.
+  intros x0 y0 Hx0 Hy0 Hxy0. apply hxmon; try now apply hyinv. now apply hymon.
+  intros x0 Hx0. fold_leq. transitivity (hy x0). now apply hyinc. apply hxinc. now apply hyinv.
+  intros x0 Hx0. apply hxinv. now apply hyinv. assumption.
+  + fold_leq. transitivity (hx z). now rewrite <- Hhx. apply hxmon. assumption. now apply hyinv. now apply hyinc.
+  + fold_leq. fold (weq_in_prop y (hy z)) in Hhy. transitivity (hy z). now rewrite <- Hhy. apply hxinc. now apply hyinv.
+ Qed.
+
+
+ Program Definition fun_on_Y_subCPO (Y: X -> B) z : directed_set leq := exist _ (mon_fun_applied Y z) _.
+ Next Obligation. apply directed_set_of_fun. Defined.
+
+
+
+ Lemma set_of_fun_is_subCPO (Y : X -> B) : is_true (is_subCPO Y) 
+   -> (forall x y, weq_in_prop x y -> (is_true (Y x) <-> is_true (Y y))) (* WARNING : Y need to preserve weq ! *)
+   -> is_true (mon_fun_applied Y bot (sup (fun_on_Y_subCPO Y bot))).
+ Proof. unfold is_subCPO. setoid_rewrite <- BForall_directed_set_spec.
+  unfold_spec. intro H. exists (fun x => sup (fun_on_Y_subCPO Y x)). repeat split.
+  + fold_weq. reflexivity.
+  + intros x y HYx HYy Hxy. apply sup_spec. cbn. setoid_rewrite <- mon_fun_spec. intros z Hz. 
+    destruct Hz as [hz [Hhz [hzmon [hzinc [hzinv HYz]]]]].
+    transitivity (hz y). rewrite Hhz. apply hzmon; assumption. apply leq_xsup. cbn.
+    rewrite <- mon_fun_spec. exists hz. repeat split; intuition. now fold_weq.
+  + intros x HYx. apply leq_xsup. cbn. rewrite <- mon_fun_spec. exists id. repeat split; intuition.
+    now fold_weq. now fold_leq.
+  + intros x HYx. apply H. setoid_rewrite <- mon_fun_spec. intros z Hz.
+    destruct Hz as [hz [Hhz [hzmon [hzinc [hzinv HYz]]]]]. apply H0 with (hz x). apply Hhz. now apply hzinv.
+  + apply H. intros x Hx. cbn in Hx. now apply BFalse_spec in Hx.
+ Qed.
+
+ (*Hypothesis fun_ext : forall x y, x == y -> is_true (P0 F x) <-> is_true (P0 F y). (* still need functional extensionality *)*)
+
+ Theorem Fixpoint_II_no_subCPO : exists x, is_true (Fix F x).
+ Proof.
+ exists (sup (fun_on_Y_subCPO (P0 F) bot)). pose proof (P0_is_invariant_subCPO F) as [PI PS].
+ assert (is_true ((P0 F) (sup (fun_on_Y_subCPO (P0 F) bot)))).
+ rewrite <- is_subCPO_spec in PS.
+ apply PS. apply included_spec. cbn. setoid_rewrite <- mon_fun_spec.
+ intros x Hx. destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
+ apply fun_ext with (hx bot). apply Hhx. apply hxinv. assumption.
+ 
+ unfold Fix. fold_weq. apply weq_spec. split.
+ 
+ + pose proof (set_of_fun_is_subCPO (P0 F) PS) as Hsub. rewrite <- mon_fun_spec in Hsub.
+   destruct Hsub as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]]. apply fun_ext.
+   rewrite Hhx at 1. apply leq_xsup. cbn. rewrite <- mon_fun_spec. exists (fun x => F (hx x)). repeat split. 
+  - fold_weq. reflexivity.
+  - intros x y Hx Hy Hxy. apply Hbody. now apply hxmon.
+  - intros x Hx. fold_leq. transitivity (hx x). now apply hxinc.
+    pose proof P0_is_in_Post. rewrite included_spec in H0. apply H0. now apply hxinv.
+  - intros x Hx. unfold Invariant in PI. rewrite included_spec in PI. apply PI. unfold Image.
+    rewrite <- BExists_spec. setoid_rewrite <- BAnd_spec.
+    exists (hx x). split. now apply hxinv. fold_weq. reflexivity.
+  - assumption. 
+ + pose proof P0_is_in_Post. rewrite included_spec in H0. apply H0.
+   rewrite <- is_subCPO_spec in PS. apply PS. rewrite included_spec. cbn.
+   setoid_rewrite <- mon_fun_spec. intros x Hx. 
+   destruct Hx as [hx [Hhx [hxmon [hxinc [hxinv HYx]]]]].
+   apply fun_ext with (hx bot). apply Hhx. now apply hxinv.
+ Qed.
+
+
+
+
+
+
+(*
   Lemma F_restricted_is_increasing : Increasing F_restricted_to_P0.
   Proof. intro y. destruct y as [x Hx]; cbn. now apply P0_is_in_Post. Qed.
-
   Theorem Fixpoint_II : exists x, Fix F x.
   Proof.
     destruct (increasing_has_fix_point F_restricted_to_P0 F_restricted_is_increasing).
     destruct x as [x Hx]. cbn in H. now exists x.
   Qed.
-
   (* Actually, we can go further. Since we constructively built the fixpoint of G as being (H_sup bot) for a well-chosen CPO.
  So we can define this fixpoint and add the results from Claim 3 of the theorem : it is both the top of P0 and the least fixpoint of F.*)
-
   Definition a := (H_sup bot). (*Here a is of type (set_type P0) since this was the last CPO to be defined.
  It's what we want, no need to specify implicit arguments. *)
-
   Lemma a_is_fixpoint_of_F : Fix F (element a).
   Proof.
     assert (Fix F_restricted_to_P0 a). apply H_sup_bot_is_fixpoint_of_all_Increasing. apply F_restricted_is_increasing.
     destruct a as [a Ha]. now cbn in *.
   Qed.
-
   Theorem a_is_top_of_P0_and_least_fixpoint_of_F :
     is_greatest (P0 F) (element a) /\ is_least (Fix F) (element a).
   Proof. split.
@@ -903,6 +1030,6 @@ Section Fixpoints.
          + split. apply a_is_fixpoint_of_F. intros. apply (P0_is_in_down y).
            assumption. destruct a as [µ Hmu]. now cbn.
   Qed.
-
+*)
 End Fixpoints.
 
