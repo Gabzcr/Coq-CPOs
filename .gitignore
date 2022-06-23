@@ -1,3 +1,4 @@
+.gitignore
 **.vo
 **.vos
 **.vio
@@ -9,3 +10,20 @@
 .nia.cache
 *~
 .lia.cache
+sujets/*
+coinduction/
+CPO_project/Makefile.coq
+CPO_project/Makefile.coq.conf
+CPO_project/.Makefile.coq.d
+sujets/*
+sujets/sujet-these.tex
+CPO_project/lfp.ml
+CPO_project/lfp.mli
+Rapport/biblio.bib
+Rapport/lstcoq.sty
+Rapport/rapport.log
+Rapport/rapport.out
+Rapport/rapport.synctex.gz
+Rapport/rapport.toc
+Rapport/test code/
+Rapport/totalisation/
