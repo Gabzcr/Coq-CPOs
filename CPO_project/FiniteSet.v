@@ -167,7 +167,7 @@ Next Obligation.
     destruct (eq_dec Bfin (a x) (b x)). easy. contradict n. apply H0.
 Qed.
 Next Obligation.
-  induction (el Bfin) eqn : EQB.
+  induction (el Bfin) eqn : EQB. (*This induction just to distinguish empty Bfin, no use of induction l*)
   + induction (el Afin) eqn : EQA.
     - unfold build_fun. rewrite EQB.
       assert (empty Afin) as Em. apply EQA.

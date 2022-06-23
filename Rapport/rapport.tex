@@ -64,12 +64,13 @@ stage encadré par Damien Pous et Yannick Zakowski}
 
 \section*{Introduction générale}
 
-Parmi toutes les révolutions qu'a permis le développement de l'informatique théorique et expérimentale dans le milieu de la recherche, la preuve formelle occupe une place de choix. Parce qu'une preuve ne sera jamais aussi fiable et rigoureuse que lorsque qu'elle est validée mécaniquement par ordinateur au sein d'une théorie cohérente, ce domaine de recherche offre la promesse d'une garantie sans précédent, en plus de permettre l'élaboration de preuves jusque là inaccessibles à cause de leur longueur et de leur complexité (par exemple, le théorème des quatre couleurs, dont la démonstration de 1991 exigeait de traiter 1478 cas critiques \cite{4color}). L'un des fers de lance de la preuve formelle est \textbf{Coq}, un assistant de preuve développé depuis les années 1980 par les chercheurs de l'INRIA, en collaboration avec l'École Polytechnique, l'université de Paris-Sud, l'université de Paris Diderot, le CNRS et depuis les années 1990, l'ENS de Lyon.
+Parmi toutes les révolutions qu'a permis le développement de l'informatique théorique et expérimentale dans le milieu de la recherche, la preuve formelle occupe une place de choix. Parce qu'une preuve est difficilement aussi fiable et rigoureuse que lorsque qu'elle est validée mécaniquement par ordinateur au sein d'une théorie cohérente, ce domaine de recherche offre la promesse d'une garantie sans précédent, en plus de permettre l'élaboration de preuves jusque là inaccessibles à cause de leur longueur et de leur complexité (par exemple, le théorème des quatre couleurs, dont la démonstration de 1991 exigeait de traiter 1478 cas critiques \cite{4color}). L'un des fers de lance de la preuve formelle est \textbf{Coq}, un assistant de preuve développé depuis les années 1980.
 
-Si la bibliothèque standard de Coq contient déjà de nombreux modules, dont un petit module sur les Ordres Partiels Complets (CPO) \cite{coqCPO}, il manque encore à Coq une bibliothèque générale regroupant les principaux résultats de la théorie des ordres partiels \cite{main}. Ces résultats sont utiles à de nombreux domaines de l'informatique, comme la sémantique, la logique, l'interprétation abstraite, l'optimisation ou l'algorithmie. Des travaux sur le sujet existent en théorie des domaines \cite{dockins}. Des versions simplifiées et spécialisées de ces notions ont d'ailleurs parfois été déjà formalisés en Coq pour les besoins de projets concrets, comme les projets de Damien Pous sur la coinduction \cite{coind-theory} disponible \href{https://github.com/damien-pous/coinduction}{sur ce lien} et les algèbre relationnelles \cite{relalg}. Ces projets pourraient bénéficier d'une bibliothèque générale, polyvalente et modulaire, dans laquelle les principaux résultats auraient déjà été formalisés sous leur forme la plus générale et réutilisable, adaptée à plusieurs niveaux de structures.
+Si la bibliothèque standard de Coq contient déjà de nombreux modules, dont un petit module sur les Ordres Partiels Complets (CPO) \cite{coqCPO}, il manque encore à Coq une bibliothèque générale regroupant les principaux résultats de la théorie des ordres partiels \cite{main}. Ces résultats sont utiles à de nombreux domaines de l'informatique, comme la sémantique, la logique, l'interprétation abstraite, l'optimisation ou l'algorithmie. Des travaux sur le sujet existent en théorie des domaines \cite{dockins}. Des versions simplifiées et spécialisées de ces notions ont d'ailleurs parfois été déjà formalisés en Coq pour les besoins de projets concrets, comme les projets de Damien Pous sur la coinduction \cite{coind-theory} % disponible \href{https://github.com/damien-pous/coinduction}{sur ce lien} 
+et les algèbre relationnelles \cite{relalg}. Ces projets pourraient bénéficier d'une bibliothèque générale, polyvalente et modulaire, dans laquelle les principaux résultats auraient déjà été formalisés sous leur forme la plus générale et réutilisable, adaptée à plusieurs niveaux de structures.
 
 
-En particulier, on dispose sur les CPOs de théorèmes de points fixes, c'est à dire d'éléments qui stabilise une fonction (définition \ref{fixpoint-def}). Ils ont été étudiés avec des hypothèses variées, et démontrés par de nombreux moyens et à de maintes reprises \cite{main} \cite{proofs} \cite{ktnote}, par exemple avec ou sans méthode déductive, imprédicative, etc. Ces résultats sont centraux dans de nombreux domaines. En sémantique par exemple, on peut donner du sens aux boucles for et while en déterminant le point fixe de leurs programmes. Ils interviennent aussi dans de nombreux algorithmes, comme certains algorithmes qui étudient les relations entre les états d'un graphe
+En particulier, on dispose sur les CPOs de théorèmes de points fixes, c'est à dire d'éléments qui stabilisent une fonction (définition \ref{fixpoint-def}). Ils ont été étudiés avec des hypothèses variées, et démontrés par de nombreux moyens et à de maintes reprises \cite{main} \cite{proofs} \cite{ktnote}, par exemple avec ou sans méthode déductive, imprédicative, etc. Ces résultats sont centraux dans de nombreux domaines. En sémantique par exemple, on peut donner du sens aux boucles for et while en déterminant le point fixe de leurs programmes. Ils interviennent aussi dans de nombreux algorithmes, comme certains algorithmes qui étudient les relations entre les états d'un graphe
 %TODO : évoquer point fixe et introduction sur à quoi ça sert !
 
 
@@ -86,10 +87,10 @@ La bibliothèque a été construite progressivement en testant différentes form
 %  te placer dans un cadre standard où l'on peut garantir qu'un tel point fixe
 %  existe, et où l'on a des méthodes pour en calculer un particulier.}
 
-\yz{Expliquer peut-être aussi dès à présent que tu vas t'intéresser à des résultats standards,
-mais sous trois loupes : la formalisation, les axiomes minimaux que leur preuve
-requiert, et le contenu calculatoire de leur preuve pour en dériver un
-algorithme effectif certifié}
+%\yz{Expliquer peut-être aussi dès à présent que tu vas t'intéresser à des résultats standards,
+%mais sous trois loupes : la formalisation, les axiomes minimaux que leur preuve
+%requiert, et le contenu calculatoire de leur preuve pour en dériver un
+%algorithme effectif certifié}
 
 {
   \hypersetup{linkcolor=black}
@@ -113,14 +114,14 @@ Soit $P$ un ensemble. Un ordre $\leq$ sur $P$ est une relation binaire qui est (
 (iii) si $x \leq y$ et $y \leq x$ alors $x = y$.
 \end{definition}
 
-Notez que l'égalité entre deux éléments, $x = y$, est loin d'être un problème facile. Les subtilités liées à l'égalité sont particulièrement visibles dans la manipulation d'un assistant de preuve formelle comme Coq. Nous travaillerons donc principalement dans ce projet avec des \textbf{pré-ordres} plutôt que des ordres, c'est à dire des relations qui sont seulement réflexives et transitives ((i) et (ii)), et une notion d'égalité ad hoc $\equiv$ définie par $x \equiv y \Longleftrightarrow (x \leq y \wedge y \leq x)$.
+Notez que l'égalité entre deux éléments, $x = y$, est loin d'être un problème facile. Les subtilités liées à l'égalité sont particulièrement visibles dans la manipulation d'un assistant de preuve formelle comme Coq. Nous travaillerons donc principalement dans ce projet avec des \textbf{pré-ordres} plutôt que des ordres, c'est à dire des relations qui sont seulement réflexives et transitives ((i) et (ii)), et une notion d'égalité ad hoc $\simeq$ définie par $x \simeq y \Longleftrightarrow (x \leq y \wedge y \leq x)$.
 
-\begin{definition}{\textbf{bottom et top : }}
-Soit $P$ un ensemble ordonné, i.e. muni d'un ordre $\leq$. On dit que $P$ possède un élément bottom ($\bot$) si : ~ $\exists \bot \in P, \forall x \in P, \bot \leq x$.
+\begin{definition}{\textbf{\textit{bottom} et \textit{top} : }}
+Soit $P$ un ensemble ordonné, i.e. muni d'un ordre $\leq$. On dit que $P$ possède un élément \textit{bottom} ($\bot$) (terme emprunté à l'Anglais) si : ~ $\exists \bot \in P, \forall x \in P, \bot \leq x$.
 
-\noindent Dualement, $P$ possède un top si : ~ $\exists \top \in P, \forall x \in P, x \leq \top$.
+\noindent Dualement, $P$ possède un \textit{top} si : ~ $\exists \top \in P, \forall x \in P, x \leq \top$.
 
-Notez que s'ils existent, ces éléments sont uniques par antisymétrie.
+Notez que s'ils existent, ces éléments sont uniques à égalité $\simeq$ près par antisymétrie.
 \end{definition}
 
 Rappelons également rapidement les notions de borne supérieure (abrégée en sup) et de borne inférieure (abrégée en inf) :
@@ -143,6 +144,8 @@ Soit $P$ un ensemble ordonné et $S \subseteq P$. $S$ est dirigé si pour toute 
 En général, on appellera $D \subseteq P$ un sous-ensemble dirigé de $P$, et on notera $\bigsqcup D = \bigvee D$ le sup d'un ensemble dirigé, quand il existe.
 \end{definition}
 
+Définissons maintenant les CPOs et les treillis complets, qui sont des ordres partiels sur lesquels on sait qu'une partie plus ou moins vaste des sous-ensembles admet une borne sup.
+
 \begin{definition}{\textbf{CPO :}}
 On dit qu'un ensemble ordonné $P$ est un CPO si :
 
@@ -159,7 +162,7 @@ C'est déjà le cas ici, car le sup de l'ensemble vide donne bottom par la défi
 %Ainsi je peux restreindre la définition de CPO au seul point (ii), car le sup de l'ensemble vide donne bottom par la définition de la borne supérieure : $\bigsqcup \emptyset = \bot$.
 %\yz{Du coup peut-être poser ta déf comme ii et faire remarquer que cela implique (i) dans ton setup ?}
 
-Par ailleurs, certains auteurs n'imposent pas du tout l'existence d'un élément bottom dans $P$ et parlent plutôt de \textbf{CPO pointé} ("dcppo") lorsque bottom existe. À l'inverse, on peut parler de \textbf{pré-CPO} (dcpo) lorsqu'on veut laisser les considérations d'existence de l'élément bottom de côté, ou retirer $\bot$ de la structure de CPO \cite[page 175]{main}.%TODO : citer le bouquin, page 175.
+Par ailleurs, certains auteurs n'imposent pas du tout l'existence d'un élément bottom dans $P$ et parlent plutôt de \textbf{CPO pointé} ("dcppo") lorsque bottom existe. À l'inverse, on peut parler de \textbf{pré-CPO} (dcpo) lorsqu'on veut laisser les considérations d'existence de l'élément bottom de côté, ou retirer $\bot$ de la structure de CPO \cite[page 175]{main}.
 
 Dans tout ce projet, on ne travaillera jamais avec des pré-CPO, toujours avec des CPO contenant $\bot$ car l'existence d'un élément bottom (et en particulier d'un élément tout court) dans $P$ sera une condition nécessaire à l'existence et au calcul de points fixes.
 
@@ -169,15 +172,15 @@ Une structure dans le prolongement de celle de CPO, qui en est une sous-classe p
 , est celle du treillis complet.
 
 \begin{definition}{\textbf{Treillis complet}}
-Soit $P$ un ensemble ordonné non vide. $P$ est un treillis complet si $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq P$ quelconque.
+Soit $P$ un ensemble ordonné. $P$ est un treillis complet si $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq P$.
 
-On dit que $P$ est un treillis si : ~ $\forall x, y, x \vee y ~~ (= \bigvee \{x,y\})$ et $x \wedge y ~~ (= \bigwedge \{x,y\})$ existent.
+%On dit que $P$ est un treillis si : ~ $\forall x, y, x \vee y ~~ (= \bigvee \{x,y\})$ et $x \wedge y ~~ (= \bigwedge \{x,y\})$ existent.
 \end{definition}
 Notez qu'un treillis complet est en particulier un CPO.
 
 \subsection{Les théorèmes de point fixe sur les ordres partiels}
 
-Maintenant que nous avons redéfini les notions et les structures qui constitueront la base de la bibliothèque, voyons les principaux résultats de points fixes construits sur ces structures.
+Maintenant que nous avons défini les notions et les structures qui constitueront la base de la bibliothèque, voyons les principaux résultats de points fixes existant sur ces structures.
 
 Les différents théorèmes suivants statuent de l'existence d'un point fixe d'une fonction $F : P \rightarrow P$ sous différentes conditions plus ou moins fortes, où $P$ est un ensemble ordonné. Commençons par rappeler quelques propriétés sur les fonctions, qui formeront des hypothèses aux théorèmes ci-dessous.
 
@@ -210,7 +213,7 @@ est un point fixe de $F$, et c'est le plus grand point fixe de $F$.
 Le théorème de Knaster-Tarski est le plus simple et le plus direct à démontrer, mais c'est aussi celui qui demande les hypothèses les plus fortes, notamment de travailler dans un treillis complet. À cause des restrictions imposées sur la structure, ce théorème est moins général que les suivants, mais il offre l'avantage de fournir une formule du point fixe. Les trois théorèmes suivants s'appliquent à n'importe quel CPO.
 
 \begin{definition}{\textbf{Fonction continue}}
-Soient $(P, \leq_P)$ et $(Q, \leq_Q)$ deux CPOs. Une fonction $\varphi : P \rightarrow Q$ est dite continue si elle préserve les limites, c'est à dire dans ce contexte les borne supérieures. Plus formellement, $\varphi$ est continue si :
+Soient $(P, \leq_P)$ et $(Q, \leq_Q)$ deux CPOs. Une fonction $\varphi : P \rightarrow Q$ est dite continue si elle préserve les limites, c'est à dire dans ce contexte les borne supérieures dirigées. Plus formellement, $\varphi$ est continue si :
 $\forall D \subseteq P \text{ dirigé }, \text{le sous-ensemble } \varphi(D) \subseteq Q \text{ est dirigé, et }$
 
 $$ \varphi(\bigsqcup D) = \bigsqcup \varphi(D) $$ 
@@ -237,9 +240,9 @@ Comme nous le développerons plus tard dans ce rapport (\ref{calculabilite}), le
 la particularité très intéressante d'avoir une preuve qui fournit une méthode de calcul concret de point fixe, contrairement au théorème I dont la formule n'est pas exploitable en pratique. Ceci s'avère particulièrement utile pour les opérations concrètes sur les CPO finis. %entièrement calculable
 %\yz{Contraster en expliquant en quoi le théorème I échoue à cela}, qui fournit une formule et une méthode pour déterminer le point fixe en question. 
 %Ceci est notamment utile pour Coq, car le théorème II fournit une méthode qui permet de calculer concrètement un point fixe, en particulier sur un CPO fini. 
-\yz{Je pense qu'il va falloir être un peu plus pédagogique vis à   vis de tout cela: l'idée d'extraire un algorithme certifié de calcul de point   fixe, le lien avec l'aspect intuitionniste de la preuve, une explication sur pourquoi bien qu’intuitionniste cela ne suffit pas pour théorème I}
+%\yz{Je pense qu'il va falloir être un peu plus pédagogique vis à   vis de tout cela: l'idée d'extraire un algorithme certifié de calcul de point   fixe, le lien avec l'aspect intuitionniste de la preuve, une explication sur pourquoi bien qu’intuitionniste cela ne suffit pas pour théorème I} --> je précise que je développerai plus tard.
 
-Notez que le théorème II implique le théorème I, puisqu'une fonction continue est monotone.
+Notez que le théorème II implique l'existence de point fixe du théorème I, puisqu'une fonction continue est monotone.
 
 \begin{definition}{\textbf{Fonction progressive (\textit{Increasing} en Anglais)}}
 Soient $P$ un CPO. Une fonction $F : P \rightarrow P$ est dite progressive si tous les éléments de $P$ sont des post-points fixes de $F$, i.e : $\forall x \in P, x \leq F(x)$.
@@ -253,7 +256,9 @@ Soient $P$ un CPO et $F : P \rightarrow P$ une fonction progressive. Alors $F$ a
 Contrairement aux deux précédents, le théorème de Bourbaki-Witt n'est pas prouvable en logique intuitionniste \cite{bw}. Il faut donc faire appel au tiers exclu ou à d'autres axiomes un peu plus faibles.
 
 Mon stage m'a amené à remarquer une erreur dans le livre \cite[page 188]{main}.
-Contrairement à ce qui y est écrit, $F$ n'a pas forcément de point fixe \emph{minimal}, et en particulier le top de $P_0$ n'est pas un point fixe minimal en général, même si c'est bien un point fixe. En voici un contre-exemple ci-dessous. Un autre contre-exemple a été passé et vérifié dans Coq (fichier Application.v), et sera mentionné en \ref{counterexample}.
+Contrairement à ce qui y est écrit, sous les hypothèses du théorème III, $F$ n'a pas forcément de point fixe \emph{minimal}. En particulier, le point fixe donné n'est pas minimal en général, même si c'est bien un point fixe.%, et en particulier le top de $P_0$ n'est pas un point fixe minimal en général, même si c'est bien un point fixe. %TODO : ajuster les futures mentions du contre-exemple.
+
+En voici un contre-exemple en Figure \ref{ce}. Un autre contre-exemple plus spécifique à la formulation du livre a été passé et vérifié dans Coq (fichier Application.v), et sera mentionné en \ref{counterexample}.
 
 %\vspace{-2.25cm}
 \begin{figure}[ht]
@@ -308,13 +313,85 @@ Contrairement à ce qui y est écrit, $F$ n'a pas forcément de point fixe \emph
 \end{tikzpicture}
 	}
 \caption{Fonction F progressive sur un CPO, sans point fixe minimal}
+\label{ce}
 \end{figure}
 %Énoncer ici les trois théorèmes de point fixe sur lesquels j'ai passé à peu près la moitié du stage. (Point de vue mathématique pour l'instant ? Le Coq viendra plus tard.)
 \yz{Peut-être un tableau avec les quatres théorèmes en ligne, et hypothèse sur
   P, hypothèses sur F, classique/intuitioniste, formule effective ou non comme
   colonnes ?}
+  %TODO ? Je me demande s'il y a vraiment la place pour ça ?
+  %TODO : enlever le superflu ?
 
-\newpage
+%\newpage
+
+\section{Les enjeux et problématiques de la formalisation}
+
+Parmi les différentes façon possibles de modéliser les structures ordonnées, on recherche une formalisation qui respecte certains critères. Nous allons viser dans ce projet l'universalité de la bibliothèque, la minimalité en terme d'axiomes et la calculabilité.
+
+\subsection{Universalité}
+\label{universalite}
+
+Le premier critère, et le plus important de tous, est que nos structures englobent bien tous les objets mathématiques qui correspondent à notre définition. Pour comprendre l'étendue de cet enjeux, explicitons une des spécificités de Coq : la différence entre les booléens \code{bool} et les propositions \code{Prop}.
+
+Les booléens forment un ensemble à deux éléments \{\code{true}, \code{false}\} muni des opérations booléennes usuelles ("ou", "et", "non", "implique", etc.). Ainsi, une évaluation booléenne d'une propriété est soit vraie soit fausse, et tout est décidable. En particulier, un "il existe" ou "pour tout" booléen n'existe pas toujours, on ne peut le définir que lorsque ça reste décidable (par exemple, sur une liste finie).
+
+Au contraire, les Propositions de Coq constituent un ensemble bien plus vaste (infini, en fait) qui encode entre autres toute la logique du premier ordre. On y trouve les prédicats de base \code{True} et \code{False} mais aussi tous les opérateurs logiques sans restriction $\backslash/, /\backslash, \implies, \neg, \exists, \forall$, une notion d'égalité $=$ etc. \code{Prop} capture en particulier les propriétés indécidables. Par exemple, on peut exprimer dans \code{Prop} le fait qu'une machine de Turing s'arrête et encoder le problème de l'arrêt, qu'on peut prouver indécidable.
+
+\medskip
+
+Une question se pose alors, quel type choisir pour représenter les sous-ensembles ? Sur un ensemble $X$, une partie $S \subseteq X$ n'est autre qu'une sélection d'éléments dans $X$, donc la formalisation naturelle est le choix du type \code{X -> Prop} en Coq. Cette formalisation est en effet la seule qui permettrait de définir l'ensemble \code{Prop} comme un treillis complet dont l'ordre $P \leq Q$ est donné par $P \rightarrow Q$ et le sup d'un ensemble $\mathcal{P}$ est donné par $\bigvee \mathcal{P} = \exists P \in \mathcal{P}, P$. Car on doit par exemple pouvoir y définir le sous-ensemble des propositions décidables, qui est lui même indécidable (problème de la décision).
+
+Or ce simple choix ne permet plus de formaliser le treillis complet à deux éléments constitué des booléens \code{bool} muni de l'ordre code{false} $\leq$ \code{true}. Nous aimerions en effet définir sur cette structure le sup d'un sous-ensemble $S \subseteq X$ comme suit : \code{if true} $\in S$ \code{then true else false}. Mais pour cela, nous avons besoin de décider si \code{true} appartient à l'ensemble $S$ ou non, ce qui correspondrait à décider la Proposition Coq ($S$ \code{true}). Or on ne sait pas décider une proposition en général.
+
+Notez que décider une proposition est encore plus fort que de supposer le tiers exclu, qui statue simplement que la proposition suivante est vraie :
+
+\begin{coq}
+forall (P : Prop), P \/  (P -> False)
+\end{coq}
+
+Mais ne sait pas déterminer en dehors d'un environnement de preuve lequel des deux côté du $\lor$ est vérifié. Nous aurions plutôt besoin du résultat suivant, bien plus contraignant, et qui permet de matcher vers l'un ou l'autre des résultats :
+
+\begin{coq}
+forall (P : Prop), { P } + {P -> False}
+\end{coq}
+
+\medskip
+
+Ici, le problème vient donc des valeurs de vérité que nous avons choisies pour définir nos sous-ensembles, et donc pour définir notre treillis et son sup. Sur le cas précis des booléens en tant que treillis complet, nous voudrions travailler dans \code{bool} au lieu de \code{Prop} et définir les sous-ensembles comme des fonctions \code{S : X -> bool}. Mais une telle définition ne fonctionnerait plus pour définir le treillis des Propositions, par exemple.
+
+Pour contourner ce problème, nous avons choisi d'inclure dans la définition des structures ordonnées une paramétrisation par un ensemble de valeurs de vérité, nommé \code{B}, construit de sorte à pouvoir englober à la fois \code{Prop} et \code{Bool}. Les sous-ensembles (dirigés ou non), sont alors définis à valeurs dans \code{X -> B}. L'implémentation et la réalisation concrètes seront donnés plus bas, en \ref{verites}. On obtient ainsi des objets des types suivants :
+
+\begin{coq}
+leq : X -> X -> B
+Sup: (X -> B) -> X
+\end{coq}
+
+
+\subsection{Minimalité}
+
+Le deuxième critère, qui a déjà été rapidement évoqué, est de faire appel au moins d'axiomes possibles afin de rester le plus général possible. Dans notre cas, nous restons en logique intuitionniste tout du long et évitons au maximum l'utilisation de l'axiome d'extensionnalité fonctionnelle :
+
+\label{funext}
+\begin{coq}
+Axiom functional_extensionality_dep : forall {A} {B : A -> Type},
+  forall (f g : forall x : A, B x),
+  (forall x, f x = g x) -> f = g.
+\end{coq}
+
+Cet axiome n'est utilisé que dans le fichier \code{FiniteSet.v}, pour prouver que les propriétés de finitude que nous imposons sont conservées par passage de deux ensembles finis \code{X, Y} vers l'ensemble \code{X -> Y}. Nous en parlerons plus en détail dans la section \ref{cloture}.
+
+\subsection{Calculabilité}
+\label{calculabilite}
+
+Un troisième critère toujours aussi fondamental est celui de la calculabilité. Les étapes de preuves d'existence de point fixe doivent le plus possible être algorithmique et constructives, pour permettre de calculer concrètement un point fixe, voire un point fixe minimal, dans un CPO donné.
+
+Malheureusement, les théorèmes I et III ne fournissent pas de telles preuves. En effet, le théorème III utilise un axiome dérivé du tiers exclu. Et le théorème I fournit pour point fixe l'élément $ \alpha = \bigvee_{n \geq 0} F^n(\bot)$ qui n'est pas calculable non plus, car il s'agit d'un sup d'ensemble infini indexé par $\mathbb{N}$. En réalité, on pourrait en dériver un algorithme sur un CPO fini. On sait que la suite $(F^n(\bot))$ stagne après un nombre fini d'étapes, au plus égal au cardinal de l'ensemble $X$ support du CPO. Malheureusement, on ne sait pas combien d'étapes sont nécessaires, et en toute généralité (sur un CPO infini) il est difficile de déterminer le point fixe minimal par cette méthode, au lieu de juste montrer son existence.
+
+Mais la preuve du théorème II (Pataraia) fournit une preuve astucieuse et un peu détournée qui a l'avantage d'être entièrement constructive. Avec un peu de travail, nous avons réussi à l'adapter en Coq de sorte à garder cette constructivité. En particulier, dans le cas des CPOs finis qui prennent leurs valeurs de vérité dans les booléens, le plus petit point fixe peut être entièrement calculé et fournir l'élément concret du CPO correspondant. Il est donné dans le fichier \code{CPO.v} par \code{lfp\_II}. 
+
+Le calcul a été testé avec succès dans le fichier \code{Applications.v} sur le CPO à trois éléments $\bot <= x1 <= x2$ et la fonction $F$ monotone définie par $F(\bot) = F(x1) = x1$ et $F(x2) = x2$. On obtient bien $x_1$ en point fixe minimal par calcul de Coq.
+
+
 
 \section{Bibliothèque finale proposée}
 
@@ -329,7 +406,7 @@ Avant de rentrer dans le vif du sujet, donnons rapidement un plan du projet et l
 \begin{itemize}
 \item[•] \code{Basic\_CPO.v} est la première version écrite de la bibliothèque, et la plus proche du livre de référence. Elle suit les preuves mathématiques presque pas à pas, quitte à faire quelques détours inutiles. C'est la moins complexe de tous, et donc la plus simple à lire et à comprendre. Je me servirai parfois du travail fait dans ce fichier pour illustrer mes explications sans rajouter la difficulté de la paramétrisation ou de définitions plus alambiquées et plus générales.
 \item[•] \code{Propositional\_CPO.v} contient une version alternative de la bibliothèque dans lequel le sup est défini comme une proposition liant un ensemble dirigé et un élément, plutôt qu'une fonction associant un élément à un ensemble dirigé. Nous y reviendrons en \ref{SupProp}.
-\item[•] \code{Parametrized\_CPO.v} contient une première version maladroite de la bibliothèque des CPOs paramétrisée par un ensemble de valeurs de vérité, appelé "B" tout au long du projet. Il sera détaillé en \ref{param}.
+\item[•] \code{Parametrized\_CPO.v} contient une première version de la bibliothèque des CPOs paramétrisée par un ensemble de valeurs de vérité, appelé "B" tout au long du projet. Il sera détaillé en \ref{param}.
 \end{itemize}
 
 \medskip
@@ -349,119 +426,6 @@ Il contient également un contre-exemple à l'erreur du livre prouvé en Coq, vi
 
 
 %Rapide outline du code et des sections, avec leur contenu, pour exposer d'un point de vue haut niveau tout le travail qui a été fait et ne rien oublier, même si je ne parle pas de tout.
-
-
-\subsection{Les enjeux et problématiques de la formalisation}
-
-Parmi les différentes façon possibles de définir les structures ordonnées, on recherche une formalisation qui respecte certains critères.
-
-\paragraph{Universalité :\\}
-\label{universalite}
-\yz{J'aurais tendance à dire que cela devrait venir probablement déjà bien avant
-dans le rapport, dans une explication des enjeux, mais il faut en tout cas avant
-cela expliquer ce qu'est Prop et en quoi il diffère de bool}
-
-\yz{Globalement je pense que ce paragraphe est très difficile à lire pour une
-  personne extérieure à tout cela, il y a pas mal de notions pas définies.
-  Il faut probablement d'abord prendre un peu
-  de temps pour expliquer que l'enjeu dont tu parles ici est de choisir
-  la formalization en Coq de l'axiomatisation des champs constitutifs d'un CPO
-  comme décrit en Section 1.1 (l'idée même que tu puisses demander de leq d'être
-  calculable ou non, etc..., par exemple est quelque chose qui n'est pas évident pour
-  quelqu'un non familier avec Coq). Arriver à l'idée que l'on peut contraindre plus
-  ou moins de contenu calculatoire à ces champs. Puis transiter vers ce qu'est
-  en Coq une proposition, et en quoi il peut être vu comme un CPO. de même avec
-  bool, et alors pointer du doigt les tensions opposées qu'ils font porter sur
-  la structure.}
-Le premier critère, et le plus important de tous, est que nos structures englobent bien tous les objets mathématiques qui correspondent à notre définition. Par exemple, dans le cas des treillis complets (ou des CPOs), on veut pouvoir définir l'ensemble des Propositions dans Coq comme étant un treillis complet, dont la relation $P \leq Q$ est donnée par $P \rightarrow Q$ et le sup d'un ensemble $\mathcal{P}$ est donné par $\bigvee \mathcal{P} = \exists P \in \mathcal{P}, P$. 
-
-Mais on veut également pouvoir définir de petites structures, comme par exemple le treillis complet des booléens \{\code{true}, \code{false}\} avec \code{false} $\leq$ \code{true}, ou n'importe quel treillis fini. Ici, la formalisation usuelle d'un sous-ensemble $S \subseteq X$ dans Coq ne le permet pas. Dans ce cas, $S$ est vu comme une fonction \code{S : X -> Prop}. %$S : X \rightarrow Prop$.
-
-Or, les Propositions de Coq ne sont pas décidables, et nous ne pouvons donc pas définir le sup $\bigvee S$ d'un sous-ensemble quelconque $\bigvee S, S \subseteq$ \{\code{true}, \code{false}\}. Nous aimerions en effet le définir comme : \code{if true} $\in S$ \code{then true else false}. Mais pour cela, nous avons besoin de décider si \code{true} appartient à l'ensemble $S$ ou non, ce qui correspondrait à décider la Proposition Coq ($S$ \code{true}). 
-
-Notez que décider une proposition est encore plus fort que de supposer le tiers exclu, qui statue simplement que la proposition suivante est vraie :
-
-\begin{coq}
-forall (P : Prop), P \/  (P -> False)
-\end{coq}
-
-Mais ne sait pas déterminer en dehors d'un environnement de preuve lequel des deux côté du $\lor$ est vérifié. Nous aurions plutôt besoin du résultat suivant, bien plus contraignant, et qui permet de matcher vers l'un ou l'autre des résultats :
-
-\begin{coq}
-forall (P : Prop), { P } + {P -> False}
-\end{coq}
-
-Or, ce résultat est faux en général dans les Propositions. Il suffit de penser par exemple au problème de l'arrêt sur les machines de Turing, que l'on peut définir comme une proposition dans Coq. Ici, le problème vient donc des valeurs de vérité que nous avons choisies pour définir nos sous-ensembles, et donc pour définir notre treillis et son sup. Nous voudrions travailler dans \code{Bool} au lieu de \code{Prop}, où tout est décidable, et définir les sous-ensembles comme des fonctions \code{S : X -> Bool}. Mais une telle définition ne fonctionnerait plus pour définir le treillis des Propositions, par exemple.
-
-Pour contourner ce problème, nous avons choisi d'inclure dans la définition des structures ordonnées une paramétrisation par un ensemble de valeurs de vérité, nommé \code{B}, construit pour englober à la fois \code{Prop} et \code{Bool}. Les sous-ensembles (dirigés ou non), sont alors définis à valeurs dans \code{X -> B}. L'implémentation et la réalisation concrètes seront donnés plus bas, en \ref{verites}.
-
-\paragraph{Généralité :\\}
-
-Le deuxième critère, qui a déjà été rapidement évoqué, est de faire appel au moins d'axiomes possibles afin de rester le plus général possible. Dans notre cas, nous restons en logique intuitionniste tout du long et évitons au maximum l'utilisation de l'axiome d'extensionnalité fonctionnelle :
-
-\begin{coq}
-Axiom functional_extensionality_dep : forall {A} {B : A -> Type},
-  forall (f g : forall x : A, B x),
-  (forall x, f x = g x) -> f = g.
-\end{coq}
-
-Cet axiome n'est utilisé que dans le fichier \code{FiniteSet.v}, pour prouver que les propriétés de finitude que nous imposons sont conservées par passage de deux ensembles finis \code{X, Y} vers l'ensemble \code{X -> Y}. Nous en parlerons plus en détail dans la section \ref{cloture}.
-
-\paragraph{Calculabilité :\\}
-\label{calculabilite}
-
-Un troisième critère toujours aussi fondamental est celui de la calculabilité. Les étapes de preuves d'existence de point fixe doivent le plus possible être algorithmique et constructives, pour permettre de calculer concrètement un point fixe, voire un point fixe minimal, dans un CPO donné.
-
-Malheureusement, les théorèmes I et III ne fournissent pas de telles preuves. En effet, le théorème III utilise un axiome dérivé du tiers exclu. Et le théorème I fournit pour point fixe l'élément $ \alpha = \bigvee_{n \geq 0} F^n(\bot)$ qui n'est pas calculable non plus, car il s'agit d'un sup d'ensemble infini indexé par $\mathbb{N}$. En réalité, on pourrait en dériver un algorithme sur un CPO fini. On sait que la suite $(F^n(\bot))$ stagne après un nombre fini d'étapes, au plus égal au cardinal de l'ensemble $X$ support du CPO. Malheureusement, on ne sait pas combien d'étapes sont nécessaires, et en toute généralité (sur un CPO infini) il est difficile de déterminer le point fixe minimal par cette méthode, au lieu de juste montrer son existence.
-
-Mais la preuve du théorème II (Pataraia) fournit une preuve astucieuse et un peu détournée qui a l'avantage d'être entièrement constructive. Avec un peu de travail, nous avons réussi à l'adapter en Coq de sorte à garder cette constructivité. En particulier, dans le cas des CPOs finis qui prennent leurs valeurs de vérité dans les booléens, le plus petit point fixe peut être entièrement calculé et fournir l'élément concret du CPO correspondant. Il est donné dans le fichier \code{CPO.v} par \code{lfp\_II}. 
-
-Le calcul a été testé avec succès dans le fichier \code{Applications.v} sur le CPO à trois éléments $\bot <= x1 <= x2$ et la fonction $F$ monotone définie par $F(\bot) = F(x1) = x1$ et $F(x2) = x2$, par le code de test suivant :
-
-\begin{coq}
-set (x := @lfp_II Bool_B CPO_valid_type B_PO_ex B_CPO_ex Fmon).
-vm_compute in x.
-\end{coq}
-
-\noindent Ce qui donne le résultat suivant : \code{x := x1 : CPO\_set}
-
-\medskip
-
-Par ailleurs, la première version de la formule du point fixe minimal donné par le théorème II prenait environ 14s à calculer, un temps désagréablement long pour un si petit CPO. Une accélération conséquente a été obtenu par une méthode de mémoïsation sur l'ensemble le plus long à calculer, $P_F$ défini plus tard en \ref{pataraia}.
-qui consiste à pré-calculer cet ensemble (c'est à dire son image, i.e. sa valeur de vérité, sur chaque élément du CPO). En voici le code, où \code{(el (projT2 X))} est une liste contenant les éléments du CPO $X$, \code{is\_member} est une fonction définie plus haut dans le fichier \code{Applications.v} qui teste l'appartenance d'un élément dans une liste, et \code{P} sera l'ensemble $P_F$ (de type \code{X -> Bool}).
-
-\begin{coq}
-	memo X P := let l := List.filter P (el (projT2 X)) in
-					fun x => is_member x l;
-\end{coq}
-
-\paragraph{Simplicité : \\}
-\label{simplicite}
-
-Enfin, il est préférable que la formalisation des structures ordonnées soit la plus simple possible, notamment à manipuler. À cette fin, notre toute première tentative de formalisation de CPO proposait une fonction sup totalisée, définie sur tous les sous-ensembles au lieu de se restreindre aux sous-ensembles dirigés qui nécessitent l'utilisation de types dépendants, mais spécifiée uniquement sur ces derniers. C'est une méthode utilisée par exemple par la division dans Coq, qui est définie partout mais non spécifiée sur $0$. 
-
-La représentation était la suivante (où \code{Directed D} est la proposition indiquant que D est dirigé, et \code{D y} indique que $y \in D$ avec \code{D : X -> Prop} sous-ensemble de $X$) :
-
-\begin{coq}
-sup : (X -> Prop) -> Prop;
-sup_spec: forall D, Directed D -> forall z, 
-			 ((sup D) <= z <-> forall (y:X), D y -> y <= z);
-\end{coq}
-
-Malheureusement, cette représentation par le type \code{sup : (X -> Prop) -> Prop} ne permettait pas de définir une notion aussi basique que le CPO des fonctions monotones d'un CPO dans un autre. En effet, dans le CPO $\langle P -> Q \rangle$ des fonctions monotones de $P$ dans $Q$ CPOs, on veut définir le sup d'un ensemble dirigé $\mathcal{F}$ par $(\bigvee_{\langle P \rightarrow Q \rangle} \mathcal{F})(x) = \bigvee_{X} \{y ~ | ~ \exists f \in \mathcal{F}, y = f(x)\}$, c'est à dire en Coq :
-
-\begin{coq}
-(sup F) : mon := fun x => sup (fun y => exists f, F f /\ y = f x)
-\end{coq}
-
-Or, dans le cas où $\mathcal{F}$ n'est pas dirigé, l'ensemble des $\{y ~ | ~ \exists f \in \mathcal{F}, y = f(x)\}$ ne l'est pas non plus donc son sup n'est pas spécifié, et nous ne pouvons pas montrer que le \code{sup F} défini ici est bien une fonction monotone (donc bien typé) dans le cas où il n'est pas spécifié.
-
-Pour cette raison, j'ai rapidement abandonné cette tentative de formalisation sans la garder dans le dépot git au profit d'un sup défini uniquement sur les ensembles dirigés, malgré la nécessité d'utiliser des types dépendants, un peu complexes à manipuler, pour définir le type des ensembles dirigés.
-
-
-
-%Exemple : fichier Lattice utilisé pour la coinduction. Faire le parallèle avec la division par zéro (pour expliquer l'intérêt de la totalisation) --> totalisation.tex, c'était un peu mieux expliqué ?. Donner les limites et les points de blocage : définition du CPO des fonctions, et expliquer pourquoi la méthode a été abandonnée.
-
 
 
 \subsection{Structure de valeurs de vérités}
@@ -505,20 +469,12 @@ Dans le cas où \code{B = Prop}, tous les types sont valides, car on peut toujou
   valid_type := { TBody : Type & K TBody};
 \end{coq}
 
-Maintenant que nous nous avons défini notre opérateur $K$ qui sélectionne les types valides, nous pouvons définir les opérations \code{Forall} et \code{Exists} sur les types valides :
+On considère maintenant la projection TBody comme une coercion de types et on se permet d'écrire simplement \code{V} pour accéder aux ensembles d'un type valide, plutôt que \code{TBody V}. Maintenant que nous nous avons défini notre opérateur $K$ qui sélectionne les types valides, nous pouvons définir les opérations \code{Forall} et \code{Exists} sur les types valides :
 
 \begin{coq}  
-  BForall (V : valid_type) : (((TBody V) -> B) -> B);
-  BForall_spec (V : valid_type) : forall (P : (TBody V) -> B), 
+  BForall (V : valid_type) : ((V -> B) -> B);
+  BForall_spec (V : valid_type) : forall (P : V -> B), 
     (forall x, is_true (P x)) <-> is_true (BForall V P);
-\end{coq}
-
-
-Enfin, comme indiqué plus haut, on intègre à notre ensemble $B$ une fonction de mémoïsation pour pouvoir pré-calculer les sous-ensembles les plus coûteux dans le cas où \code{B = bool}, et ainsi optimiser les temps d'exécution de calcul concrets de point fixe dans le cas fini.
-
-\begin{coq}
-  memo (X : valid_type) : ((projT1 X) -> B) -> ((projT1 X) -> B);
-  memo_spec (X : valid_type) : forall P x, is_true (memo X P x) <-> is_true (P x);
 \end{coq}
 
 Le code complet de la définition de la structure des valeurs de vérité se trouve au début du fichier \code{CPO.v} et est redonné en annexe \ref{annexe}.
@@ -543,42 +499,61 @@ Des tentatives de définition d'un ensemble $B$ fini distinct de \code{bool} ont
 
 \subsection{Structure d'ordre, de CPO et de treillis}
 
-Maintenant que nous avons vu nos valeurs de vérité dans $B$, nous pouvons définir les ensembles dirigés comme des sous-ensembles de $X$ de type \code{X -> B} vérifiant une certaine propriété, et donc les treillis complets et les CPOs. Mais avant cela, nous avons besoin d'une structure plus générale d'ensemble (partiellement) ordonné, appelé PO. Nous posons sur notre ensemble un pré-ordre \code{leq}, et ajoutons par dessus une notion d'égalité ad hoc spécifique appelée \code{weq} et notée par le symbole infixe $\equiv$, de sorte que \code{leq} soit ordre, i.e. qui garantit l'antisymétrie : $x \equiv y \Leftrightarrow (x \leq y /\ y \leq x)$. Comme on définit \code{leq} et \code{weq} à valeurs dans $B$, il faut encore rajouter l'évaluation \code{is\_true} un peu partout pour que ça ait un sens dans les Propositions, et pour en faire de véritables relations d'ordre. Attention, les évaluations \code{is\_true} ne seront plus toujours précisées dans la suite du rapport, pour alléger les notations. On écrira simplement \code{x <= y} et \code{x == y} pour les évaluations de \code{leq} et \code{weq}.
+Maintenant que nous avons vu nos valeurs de vérité dans $B$, nous pouvons définir les ensembles dirigés comme des sous-ensembles de $X$ de type \code{X -> B} vérifiant une certaine propriété, et donc les treillis complets et les CPOs. Mais avant cela, nous avons besoin d'une structure plus générale d'ensemble (partiellement) ordonné, appelé PO. Nous commençons par munir notre ensemble d'un pré-ordre \code{leq}.%, et ajoutons par dessus une notion d'égalité ad hoc spécifique appelée \code{weq} et notée par le symbole infixe $\equiv$, de sorte que \code{leq} soit ordre, i.e. qui garantit l'antisymétrie : $x \equiv y \Leftrightarrow (x \leq y /\ y \leq x)$. 
+Comme on le définit à valeurs dans $B$, il faut encore rajouter l'évaluation \code{is\_true} un peu partout pour pouvoir passer dans les Propositions et énoncer des propriétés à prouver, par exemple pour  en faire des relations d'ordre. 
 
+%    weq: X -> X -> B;
+%    weq_spec: forall x y, is_true (weq x y) 
+%    		<-> (is_true (leq x y) /\ is_true (leq y x));
 \begin{coq}
 Class B_PO := {
-    weq: X -> X -> B;
     leq: X -> X -> B;
     Preorder_leq :> PreOrder (fun x y => is_true (leq x y));
-    weq_spec: forall x y, is_true (weq x y) 
-    		<-> (is_true (leq x y) /\ is_true (leq y x));
+	[...] (* quelques manipulations d'egalite ad hoc *)
   }.
 \end{coq}
 
-Maintenant, on peut définir nos ensembles dirigés en traduisant la définition \ref{diriges}, puis les structures de CPO et de treillis complet par dessus une structure d'ensemble ordonné. (Note : quelques subtilités Coq de coercions de Types ont été laissées de côté ci-dessous.)
+Pour la suite de ce rapport, on fait de l'évaluation \code{is\_true} une coercion implicite de \code{B} vers \code{Prop} pour s'épargner de l'écrire et alléger les notations. On écrira alors simplement \code{x <= y} pour l'évaluation de \code{leq}, par exemple.
+
+Maintenant, on peut définir nos ensembles dirigés en traduisant la définition \ref{diriges}, puis les structures de CPO et de treillis complet par dessus une structure d'ensemble ordonné.
 
 \begin{coq}
 Definition Directed {X} `(leq : rel X) (D : X -> B) : Prop := forall x y, 
-	is_true (D x) -> is_true (D y) -> exists z, D z /\ x <= z /\ y <= z.
+	D x -> D y -> exists z, D z /\ x <= z /\ y <= z.
 Definition directed_set `(leq : X -> X -> B) := 
-	{Dbody : set | is_true (Directed leq Dbody)}.
+	{Dbody : (X -> B) | (Directed leq Dbody)}.
 
 Class B_CPO `(P' : B_PO) := {
     sup: directed_set leq -> X;
-    sup_spec: forall D z, (sup D <= z <-> 
-    	forall (y:X), is_true (D y) -> y <= z);
+    sup_spec: forall D z, (sup D <= z <-> forall (y:X), D y -> y <= z);
   }.
 
 Class B_CL `(L' : B_PO) := {
     Sup: (X -> B) -> X;
     Sup_spec: forall Y z, (Sup Y <= z <-> 
-    	forall y, is_true (Y y) -> y <= z);
+    	forall y, Y y -> y <= z);
   }.
 \end{coq}
 
 La seule différence notable est l'ensemble de définition du sup/Sup de la structure. Dans le premier cas, il n'est défini que sur les ensembles dirigés, alors que dans l'autre cas il est défini sur tous les sous-ensembles. 
 
 Il a fallu faire un choix entre définir la structure de treillis complet (CL) par-dessus celle de CPO, car un treillis complet est en particulier un CPO, ou séparer les structures comme il a été fait ici. Séparer les structures est à mon sens plus clair, et permet de définir seulement une fonction sup par structure, distinctes. En revanche, ça dédouble certaines preuves basiques qu'on aimerait avoir à la fois dans les deux structures. Pour les preuves plus complexes, on utilise simplement la propriété qu'un CL est un CPO pour obtenir un CPO et appliquer la preuve sur les CPO.
+
+\medskip
+
+\paragraph{Première version totalisée :\\}
+\label{simplicite}
+Pour la formalisation du sup sur les CPOs, une première tentative visait à en donner une définition plus simple à formaliser et à manipuler. Nous proposions une fonction sup totalisée, définie sur tous les sous-ensembles au lieu de se restreindre aux sous-ensembles dirigés mais spécifiée uniquement sur ces derniers. Ceci permettait notamment d'éviter l'utilisation de types dépendants nécessaire à la définition de sous-ensembles dirigés. Cette méthode n'est pas nouvelle, c'est celle qui est utilisée par exemple par la division dans Coq, définie partout mais non spécifiée sur $0$. 
+
+La toute première représentation du sup d'un CPO avait donc simplement pour type \code{sup : (X -> Prop) -> Prop}. Malheureusement, cette représentation ne permettait pas de définir certaines notions pourtant basiques, comme le CPO des fonctions monotones reliant deux CPOs. En effet, dans le CPO $\langle P -> Q \rangle$ des fonctions monotones de $P$ dans $Q$ avec $P$ et $Q$ deux CPOs, on veut définir le sup d'un ensemble dirigé $\mathcal{F}$ par $(\bigvee_{\langle P \rightarrow Q \rangle} \mathcal{F})(x) = \bigvee_{X} \{y ~ | ~ \exists f \in \mathcal{F}, y = f(x)\}$, c'est à dire en Coq :
+
+\begin{coq}
+(sup F) : mon := fun x => sup (fun y => exists f, F f /\ y = f x)
+\end{coq}
+
+Or, dans le cas où $\mathcal{F}$ n'est pas dirigé, l'ensemble des $\{y ~ | ~ \exists f \in \mathcal{F}, y = f(x)\}$ ne l'est pas non plus donc son sup n'est pas spécifié, et nous ne pouvons pas montrer que le \code{sup F} défini ici est bien une fonction monotone dans le cas où il n'est pas spécifié. Donc, nous ne pouvons pas établir que la définition toute entière est bien typée.
+
+Pour cette raison, j'ai rapidement abandonné cette tentative de formalisation sans même la garder dans le dépot git, au profit d'un sup défini uniquement sur les ensembles dirigés. Et ce malgré la nécessité d'utiliser des types dépendants, un peu plus complexes à manipuler, pour définir le type des ensembles dirigés.
 
 
 
@@ -617,7 +592,7 @@ Détaillons maintenant un peu les mécanismes derrière chacun des trois théor�
 
 Dans le cas où $F$ est continue, le point fixe minimal est donnée par la formule : ~ $\alpha := \bigsqcup_{n \geq 0}F^n(\bot)$. Il est relativement simple de prouver ce résultat dans \code{Prop}, en suivant la preuve intuitionniste donnée \cite[page 183]{main}.
 
-Voici ci-dessous les grandes lignes de formalisation de ce théorème dans le fichier \code{Basic\_CPO.v}, dépourvues de leurs preuves par souci de clarté. Le code complet se trouve aux lignes 268 à 327 (pour la partie travail sur l'ensemble $\{F^n(\bot) ~ | ~ n \in \mathbb{N} \}$, puis 663 à 696 pour le théorème I à proprement parler.
+Voici ci-dessous les grandes lignes de formalisation de ce théorème dans le fichier \code{Basic\_CPO.v}, dépourvues de leurs preuves par souci de clarté. Le code complet se trouve aux lignes 268 à 327 (pour la partie travail sur l'ensemble $\{F^n(\bot) ~ | ~ n \in \mathbb{N} \}$), puis 663 à 696 pour le théorème I à proprement parler.
 
 \begin{coq}
   Fixpoint itere F n x0 : X :=
@@ -626,15 +601,17 @@ Voici ci-dessous les grandes lignes de formalisation de ce théorème dans le fi
     | S m => F (itere F m x0)
     end.
 
-  Variant iteres F : X -> Prop :=
-  | from_bot : forall n, iteres F (itere F n bot).
+  Variant iteres F : X -> Prop := fun x => exists n, x = itere F n bot
 
-  Program Definition a := (sup (exist _ (iteres F) _)).
+  Program Definition a := (sup (exist _ (iteres F) _)). (* L'enrobage de 
+  (iteres F) est là pour en faire un ensemble dirigé, le second 
+  underscore remplace une preuve de son caractère dirigé (omise). *)
+  cache une preuve du fait que (iteres F) est bien un ensemble dirigé *)
   Theorem Fixpoint_I_ii : Continuous F -> is_least (Fix F) a.
 \end{coq}
 
-En revanche, dans un ensemble de valeurs de vérité quelconque $B$ (typiquement \code{bool}), on ne peut plus définir l'ensemble \code{iteres} $= \{F^n(\bot) ~ | ~ n \in \mathbb{N} \}$ comme une simple proposition \code{forall n, iteres F (itere F n bot)}%, ie $\forall n \in \mathbb{N}, F^n(\bot) \in$ \code{iteres}. 
-. En particulier, dans \code{bool}, on aurait besoin d'un opérateur \code{Forall} sur l'ensemble infini des entiers, qui n'est pas un type valide avec la façon dont nous avons défini nos valeurs de vérité booléennes. En effet, on ne peut pas avoir de \code{Forall} calculable sur un ensemble infini a priori, d'où l'impossibilité de définir notre ensemble \code{iteres : X -> B} dans le cas où \code{B} est \code{bool}.
+En revanche, dans un ensemble de valeurs de vérité quelconque $B$ (typiquement \code{bool}), on ne peut plus définir l'ensemble \code{iteres} $= \{F^n(\bot) ~ | ~ n \in \mathbb{N} \}$ avec le type \code{X -> B} en l'énonçant comme la Proposition \\ \code{exists n, x = itere F n bot} (ou encore \code{forall n, iteres F (itere F n bot)} comme dans le fichier \code{Basic\_CPO.v}). %, ie $\forall n \in \mathbb{N}, F^n(\bot) \in$ \code{iteres}. 
+En particulier, dans \code{bool}, on aurait besoin d'un opérateur \code{Forall} sur l'ensemble infini des entiers, qui n'est pas un type valide avec la façon dont nous avons défini nos valeurs de vérité booléennes. En effet, on ne peut pas avoir de \code{Forall} calculable sur un ensemble infini a priori, d'où l'impossibilité de définir notre ensemble \code{iteres : X -> B} dans le cas où \code{B} est \code{bool}.
 
 On pourrait tout de même remarquer que l'ensemble \code{iteres} est inclus dans $X$ donc son cardinal est fini. On sait alors qu'un algorithme qui itère $F$ sur $\bot$ dans le cas où $X$ est fini construit une suite stationnaire, qui stagne en un nombre fini d'étapes. Le problème est que ce nombre d'étapes n'est pas connu à l'avance et $\mathbb{N}$ est trop grand. Il faudrait indexer l'ensemble \code{iteres} sur $X$ au lieu de $\mathbb{N}$, mais je n'ai pas trouvé de moyen de le définir ainsi en Coq, avec les seuls opérateurs dont nous disposons, et surtout dans le cas \code{B} général où aucune hypothèse n'est avancée. Et de toute façon, le théorème II est impliqué par le théorème I, qui fournit une preuve intuitionniste \textbf{et} calculable effectivement. Cette tentative de formalisation a donc été abandonnée.
 
@@ -657,12 +634,12 @@ La formule obtenue pour le point fixe $\mu$ est entièrement calculable dans les
 
 La première version de la bibliothèque suivait fidèlement le schéma de preuve ci-dessus en définissant le CPO des fonctions monotones, puis l'ensemble dirigé des fonctions progressives pour en prendre le sup (lignes 494 à 533, section \code{Increasing\_fixpoint} dans le fichier \code{Basic\_CPO}). On définit ensuite le sous-CPO $P_F$, qu'on utilise comme CPO de départ de nos endofonctions monotones et progressives pour obtenir le point fixe.
 
-Cette méthode n'était plus possible dans les versions ultérieures de la bibliothèques, avec la paramétrisation par les valeurs de vérité \code{B}, car la définition d'un sous-CPO en tant que CPO (et en particulier en tant que type ordonné) nécessite l'utilisation de types dépendants. Or nous voulions éviter d'avoir à re-définir. 
+Cette méthode n'était plus possible dans les versions ultérieures de la bibliothèques, avec la paramétrisation par les valeurs de vérité \code{B}, car la définition d'un sous-CPO en tant que CPO (et en particulier en tant que type ordonné) nécessite l'utilisation de types dépendants. Or nous voulions éviter d'avoir à re-définir les types dépendants dans \code{B}. 
 
 Illustrons le problème en détaillant un peu. Soit $X$ un CPO, et $Y \subseteq X$ un sous-CPO de $X$, i.e. $Y$ contient $\bot$ et le sup de tout ensemble dirigé de $X$ inclus dans $Y$ est contenu dans $Y$. Soit $D \subseteq Y \subseteq X$ un ensemble dirigé (dans $Y$). Pour définir $Y$ en tant que CPO, il faut déjà définir $Y$ en tant que type. Un élément de $Y$ est défini comme un élément de $X$ muni de la propriété \code{Y x} (i.e. $x \in Y$ dans \code{B}). D'où un premier type dépendant, qui ne pose pas encore problème à transposer dans \code{B} en prenant son évaluation dans Prop \code{is\_true (Y x)}.
 
 \begin{coq}
-  Definition set_type (Y : set X) : Type := { x : X | Y x}.
+  Definition set_type (Y : X -> B) : Type := { x : X | Y x}.
 (* deux lignes pour s'epargner d'extraire l'element de sa preuve ensuite :*)
   Definition element Y (y :set_type Y) := proj1_sig y.
   #[global] Coercion element : set_type >-> X.
@@ -671,10 +648,10 @@ Illustrons le problème en détaillant un peu. Soit $X$ un CPO, et $Y \subseteq 
 Ensuite, il faut pouvoir définir le sup de $D$. Comme $D$ est dirigé dans $Y$, il est dirigé dans $X$ et on voudrait prendre son sup en tant que sous-ensemble dirigé de $X$. Mais $D$ est défini comme un sous-ensemble de $Y$, donc est de type \code{D : Y -> B}. Pour en prendre le sup dans $X$, il faut compléter cette fonction en un objet de type \code{D' : X -> B} donné par \code{complete\_body Y D}. Alors on aimerait définir \code{(D' x)} comme vrai à la double condition que \code{x} est dans $Y$ et que x \textbf{(en tant qu'élément de \code{Y})} est dans D'. En voici le code sans paramétrisation, dans \code{Basic\_CPO} :
 
 \begin{coq}
-  Definition complete_body {Y : set X} (D : set (set_type Y)) : set X :=
+  Definition complete_body {Y : X -> B} (D : (set_type Y) -> B) : X -> B :=
     (fun x => {is_in_Y : Y x & D (exist _ x is_in_Y)}).
  (* [...] *)
-  Program Instance subCPO (Y:set X) (H : is_subCPO Y) : (CPO (subPO Y)) :=
+  Program Instance subCPO (Y: X -> B) (H : is_subCPO Y) : (CPO (subPO Y)) :=
     {| sup D := sup (exist (Directed leq) (complete_body D) _) ; |}.
 \end{coq}
 
@@ -687,7 +664,7 @@ $$E_{Y,z} = \{ h(z) \in X ~ | ~ h : Y \rightarrow Y ~ \text{monotone progressive
 où les fonctions $h : Y \rightarrow Y$ sont vues comme des fonctions de $X \rightarrow X$ qui vérifient $\forall x \in Y, h(x) \in Y$ (i.e. $Y$ est $h$-invariant). On s'intéresse alors à $E_{Y,\bot}$ et on montre que c'est un sous-CPO (i.e. il contient $\bot$ et les sup de ses ensembles dirigés). Pour cela on s'appuie sur la fonction monotone progressive $h : x \mapsto \bigvee E_{Y, x}$, cf lemme \code{set\_of\_fun\_is\_subCPO}, d'où la nécessité de considérer un $z$ quelconque dans ces ensembles et de ne pas prendre $\bot$ directement. Le sup de $E_{P_F, \bot}$ est le point fixe minimal recherché (et $\top$ de $P_F$).
 
 \begin{coq}
- Definition E_Y_z (Y : set X) (z : X) (* z sera bot *) (x0 : X) := 
+ Definition E_Y_z (Y : X -> B) (z : X) (* z sera bot *) (x0 : X) := 
    exists (h : X -> X), x0 = h z
    /\ (forall x y, Y x -> Y y -> leq x y -> leq (h x) (h y)) (* h monotone *)
    /\ (forall x, Y x -> leq x (h x)) (* h progressive *)
@@ -821,7 +798,7 @@ J'ai aussi prouvé que le fait que $P_F$ soit une chaîne n'est pas suffisant en
 
 \bigskip
 
-Malheureusement, c'est approche n'était pas satisfaisante pour plusieurs raisons. Premièrement, avec cette méthode, on perd tout espoir de calculabilité puisque tout vit dans \code{Prop}, donc rien n'est décidable ou calculable, même le sup d'un ensemble dirigé donné concrètement. Sur un CPO fini, ça signifie d'être incapable de calculer un point fixe concrètement, même avec la méthode fournie par le théorème de Pataraia.
+Malheureusement, cette approche n'était pas satisfaisante pour plusieurs raisons. Premièrement, avec cette méthode, on perd tout espoir de calculabilité puisque tout vit dans \code{Prop}, donc rien n'est décidable ou calculable, même le sup d'un ensemble dirigé donné concrètement. Sur un CPO fini, ça signifie d'être incapable de calculer un point fixe concrètement, même avec la méthode fournie par le théorème de Pataraia.
 
 Ensuite, on a besoin pour définir des CPOs très simples (comme \code{bool} ou le CPO à trois éléments utilisé ci-dessus) d'axiomes dont on aimerait grandement se passer, en l'occurrence le tiers exclu.
 
@@ -847,17 +824,17 @@ C'est aussi à partir de cette étape qu'est apparue l'impossibilité de défini
 
 
 
-\section{Application :  les CPOs finis}
+\section{Application : les CPOs finis}
 
-L'un des principaux intérêts de la bibliothèque créée est de pouvoir travailler sur les CPOs finis de manière calculable. Aussi, un travail conséquent a été fourni pour définir les ensembles finis et exploiter nos structures d'ordre afin de construire des ensembles finis ordonnés et en démontrer certaines propriétés.
+L'un des principaux intérêts de la bibliothèque créée est de pouvoir travailler sur les CPOs finis de manière calculable. Un travail conséquent a été fourni pour définir les ensembles finis et exploiter nos structures d'ordre afin de construire des ensembles finis ordonnés et en démontrer certaines propriétés.
 
-Nous sommes bien conscients que les ensembles finis ont déjà été formalisés en Coq, notamment par le biais de l'extension SSReflect, et de manière plus efficace et minimale que ce qui est proposé dans ce projet (en particulier, sans utiliser l'axiome \code{functional extensionality}). Cependant, les ensembles finis représentaient une excellente occasion de manipuler la bibliothèque concrètement et la voir à l’œuvre. De plus, ils permettent de faire du projet un bloc autonome et indépendant pour la bibliothèque standard de Coq. Enfin, il s'agit d'un très bon exercice de stage de master dans l'apprentissage approfondi de Coq, avec des subtilités techniques de types dépendants entre autres.
+Nous sommes bien conscients que les ensembles finis ont déjà été formalisés en Coq, notamment par le biais de l'extension SSReflect, et de manière plus efficace et minimale que ce qui est proposé dans ce projet (en particulier, sans utiliser l'axiome \code{functional extensionality}). Cependant, les ensembles finis représentaient une excellente occasion de manipuler la bibliothèque concrètement et la voir à l’œuvre. De plus, ils permettent de faire du projet un bloc autonome et indépendant pour la bibliothèque standard de Coq. Enfin, il s'agit d'un bon exercice de stage de master dans l'apprentissage approfondi de Coq, avec des subtilités techniques de types dépendants entre autres.
 
 
 \subsection{Représentation d'un ensemble fini}
 \label{finis}
 
-Intéressons nous donc au cas des CPOs finis, définis sur les valeurs de vérité \code{B = bool} pour la calculabilité. Ces objets reposent sur une notion d'ensembles finis, dont nous avons donné une définition et des propriétés dans le fichier \code{FiniteSet.v}, indépendant du reste du projet et notamment des structures ordonnées.
+Intéressons nous donc au cas des CPOs finis, utilisés conjointement avec les valeurs de vérité \code{B = bool} pour garder la calculabilité. Ces objets reposent sur une notion d'ensembles finis, dont nous avons donné une définition et des propriétés dans le fichier \code{FiniteSet.v}, indépendant du reste du projet et notamment des structures ordonnées.
 
 Nous avons choisi de définir les ensembles finis de sorte que l'égalité soit décidable et que tous ses éléments soient contenus dans une liste (d'où la finitude).
 
@@ -869,43 +846,266 @@ Record fin X := {
   }.
 \end{coq}
 
+Ces types sont les types valides de notre structure de vérité booléenne, que nous pourrons enfin définir comme ci-dessous. \code{is\_member x l} est une fonction booléenne qui évalue si x est contenu dans l, définie plus tôt dans le fichier, et \code{el (projT2 X)} est la liste finie énumérant les éléments de X.
 
-%Expliquer plus longuement la représentation d'un ensemble fini par un type dont tous les éléments sont contenus dans une liste.
 
+\begin{coq}
+ Program Instance Bool_B : B_param :=
+  {|
+    B := bool;
+    K := fin;
+    BTrue := true;
+    BAnd := andb;
+    BForall V := fun P => List.forallb P (el (projT2 V));
+    memo X P := let l := List.filter P (el (projT2 X)) in
+                        fun x => is_member x l;
+    [...] (* code abrege pour la lisibilite *)
+  |}.
+\end{coq}
 
-%\subsection{Exemple : Un CPO à trois éléments}
-%Evoquer rapidement l'implémentation du CPO à trois éléments, (re)donner l'exemple concret de calcul d'un sup par le théorème II, et évoquer le contre-exemple à l'erreur du bouquin.
-%--> déjà fait plus haut suffisamment, pas grand chose de plus à dire.
-%TODO : évoquer tout de même l'implémentation du CPO à trois éléments, ses subtilités si pertinent ?
+Alors, il devient possible et même facile de définir par exemple un ensemble à deux éléments, comme \code{bool}, en tant que CPO. Comme expliqué en \ref{universalite}, C'est une définition qu'il n'était pas possible de faire dans \code{Prop}.
 
+\begin{coq}
+Program Instance B_CPO_bool : B_CPO B_PO_bool :=   {| sup D := D true; |}.
+\end{coq}
+
+Ou encore un CPO à trois éléments $\bot \leq x_1 \leq x_2$ en ajustant simplement la définition du sup :
+
+\begin{coq}
+Definition sup_ex (D :@directed_set Bool_B CPO_valid_type leq3) := 
+	if (D x2) then x2 else (if (D x1) then x1 else bottom).
+\end{coq}
+
+\medskip
+
+\label{memo}
+Revenons un peu plus en détail sur la définition de l'opération de mémoïsation \code{memo} sur X. Cette opération est utilisée pour améliorer le temps de calcul concret d'un point fixe minimal donné par le théorème II. On pré-calcule et stocke le résultat du prédicat \code{P} sur X à l'avance, pour le réutiliser plus tard sans le recalculer à chaque étape. Ici comme \code{P} est de type \code{X -> bool}, il s'agit d'un sous-ensemble dans notre formalisation. On stocke donc en fait le sous-ensemble \code{P}, ou plus précisément sa valeur de vérité sur chaque élément du CPO, i.e. les résultats du booléen \code{P x} pour tout $x \in X$ dans la liste finie des éléments de $X$. Dans ce projet, on utilise la fonction memo pour pré-calculer le sous-ensemble $P_F$, qui est de loin le plus long de tous les calculs à effectuer.
+
+La première version de la formule du point fixe (sans optimisation de ce genre) prenait environ 14s à calculer sur un CPO à trois éléments, un temps beaucoup trop long pour un si petit CPO. Par cette méthode, une accélération conséquente a été obtenue, réduisant le temps de calcul à quelque chose de quasiment immédiat (clairement moins d'une seconde).
 
 
 \subsection{Propriétés de clôture}
 \label{cloture}
 
-(Passer le code des preuves en annexe ?)
-Evoquer les difficultés liées aux types dépendants.
+Afin de faire des ensembles finis une famille de types valides pour notre structure de valeurs de vérité \code{B = bool}, il faut tout de même que ces propriétés vérifient les spécificités de \code{K}, à savoir que si $V_1$ et $V_2$ sont deux ensembles finis par la définition ci-dessus, et $P$ est une proposition sur $V_1$ (\code{P : V1 -> B}), alors $V_1 \rightarrow B$, $V_1 \rightarrow V_2$ et
+\{ v : $V_1$ ~ | ~ \text{\code{is\_true(P v)}} \} le sont aussi.
+
+C'est là (et uniquement là) que nous avons besoin de l'axiome d'extensionnalité fonctionnelle donné en \ref{funext}. En effet, pour prouver que l'égalité est décidable sur les fonctions $V_1 \rightarrow V_2$, il faut pouvoir manipuler l'égalité entre deux fonctions de ce type et se ramener à des égalités qu'on sait décidables sur $V_1$ et $V_2$. Il en va de même dans les preuves de finitudes : pour montrer que toutes les fonctions peuvent être mises dans une liste, on a besoin de manipuler des égalités de fonction.
+
+\medskip
+
+Le fichier \code{FiniteSet.v} est relativement technique. Pour prouver les finitudes, il a fallu d'abord définir des algorithmes qui énumèrent toutes les fonctions entre deux types finis $V_1 \rightarrow V_2$ (ou de $V_1 \rightarrow B$ pour commencer plus simplement) et les stockent dans une liste. Le cas des ensembles vides était délicat à traiter, car il existe une unique fonction $\emptyset \rightarrow V_2$ pour tout ensemble $V_2$, mais aucune fonction de $V_1 \rightarrow \emptyset$ si $V_1 \neq \emptyset$. L'algorithme d'énumération est constitué des fonctions \code{add\_last\_image}, \code{build\_fun\_opt} et \code{build\_fun} (lignes 116-151). Sa preuve de correction est une obligation de la définition de l'ensemble fini des fonctions, lignes 169 à 230, et s'appuie sur plusieurs lemmes précédents.
+
+Un point qui rend ces preuves très techniques est la manipulation de types dépendants, puisque les objets que nous construisons dépendent de propriétés sur nos arguments, donc de preuves, qui se retrouvent dans le typage des \textit{matching}. Par exemple, Le cas des ensembles finis nous oblige à examiner l'égalité entre notre liste \code{(el Cfin)} et la liste vide, pour construire l'unique fonction qui part de l'ensemble vide si besoin, et sinon énumérer les possibles images des éléments de la liste. Voici un échantillon de manipulation de types dépendants dans un \textit{matching} (lignes 146-149) :
+
+\begin{coq}
+(match (el Cfin) as l return (el Cfin = l) -> list (C -> D) with
+            | nil => (fun Heq =>  cons (@empty_fun C D Cfin Heq) nil)
+            | c :: qc => fun _ => nil
+            end) eq_refl
+\end{coq}
+
+Le problème est que l'évaluation de ce genre de \textit{match} est rendue difficile par le fait que Coq ne peut pas automatiquement remplacer une expression par son évaluation si le type de l'objet évalué est utilisé ailleurs. Il faut donc d'abord prouver que les deux types sont bien égaux avant de les remplacer l'un par l'autre pour pouvoir évaluer, et le tout est très fastidieux. Un exemple illustrant ce problème plus en détail est donné en annexe \ref{dep}.
+
+Les preuves font par ailleurs intervenir des résultats intermédiaires techniques de décidabilité et de \textit{proof irrelevance} (le fait que deux preuves d'une même propriété sont nécessairement égales, autrement dit peu importe la preuve qu'on choisit), comme ceux ci-dessous :
+
+\begin{coq}
+Lemma In_is_decidable : forall (l : list A) (a : A), {In a l} + {not (In a l)}.
+
+Lemma Is_true_proof_irrelevance : forall b (p1 p2 : Bool.Is_true b), p1 = p2.
+\end{coq}
 
 
-\subsection{Tout ordre partiel fini est un CPO}
+\subsection{Ordre partiel fini}
 \label{ordrepartiel}
+
+Au cours de mon stage, j'ai eu l'occasion d'utiliser ma bibliothèque pour prouver un résultat intéressant, et le certifier dans Coq.
+
+\begin{theorem}
+Tout ensemble fini muni d'un ordre partiel et d'un élément bottom est un CPO.
+\end{theorem}
+
+Cette propriété est prouvée par la définition du CPO \code{FinitePO\_to\_CPO} dans la section \code{FiniteOrder} du fichier \code{Applications.v}, lignes 128 à 494. C'était bien plus délicat à démontrer que l'on peut croire de prime abord, notamment pour trouver le sup d'un ensemble dirigé et en prouver les propriété.
+
 
 \subsubsection{Algorithme utilisé pour obtenir le sup}
 
-Exposer l'algorithme de parcours avec mise à jour des candidats éléments maximaux
+Pour trouver le sup d'un sous-ensemble $Y \subseteq X$ dirigé, %on voit notre ensemble ordonné comme un graphe orienté (les arêtes sont donnés par la relation $\leq$) et 
+on parcourt chacun des éléments de $Y$ (i.e. les éléments $x$ de $X$ fini, énumérés dans sa liste, qui satisfont la propriété \code{Y x}) et on maintient à jour une liste \code{candidats} des éléments maximaux rencontrés. Pour se faire, à chaque nouvel élément rencontré, s'il n'y a pas d'éléments plus grand que lui dans la liste de \code{candidats}, on l'ajoute; et on enlève de la liste tous les éléments qui lui sont inférieurs.
+
+
+
+
+
+
+
+
+\begin{figure}[ht]
+\centering
+\resizebox{0.9\linewidth}{!}
+	{
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw, blue](x1) at (-1.25,0.9) {$x_1$};
+   \node[circle, draw, blue](x3) at (-1.1,2.25) {$x_3$};
+   \node[circle, draw, blue](x2) at (1.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top) at (0,3) {$x_4$};
+
+   \node[text = blue] (D) at (-3,2) {$D \subseteq X$};
+   \node[text = red] (vus) at (-4,1) {éléments traités};
+   \node[text = black] (cand) at (-2.5,-0.9) {candidats};
+   
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot) -- (x1);
+   \draw[->] (bot) -- (x2);
+   \draw[->] (x1) -- (x3);
+   \draw[->] (x3) -- (top);
+   \draw[->] (x2) -- (top);
+   
+   \node[text = black] (lst1) at (0,-1) {$[~]$};
+
+	\draw[->] (2.5, 1.5) -- (3.5,1.5);
+	
+	
+   \node[circle, draw](bot2) at (6,0) {$\bot$};
+   \node[circle, draw, red](x12) at (4.75,0.9) {$x_1$};
+   \node[circle, draw, blue](x32) at (4.9,2.25) {$x_3$};
+   \node[circle, draw, blue](x22) at (7.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top2) at (6,3) {$x_4$};
+   
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot2) -- (x12);
+   \draw[->] (bot2) -- (x22);
+   \draw[->] (x12) -- (x32);
+   \draw[->] (x32) -- (top2);
+   \draw[->] (x22) -- (top2);
+   
+   \node[text = black] (lst1) at (6,-1) {$[x_1]$};
+   
+   	\draw[->] (8.5, 1.5) -- (9.5,1.5);
+	
+	
+   \node[circle, draw](bot3) at (12,0) {$\bot$};
+   \node[circle, draw, red](x13) at (10.75,0.9) {$x_1$};
+   \node[circle, draw, blue](x33) at (10.9,2.25) {$x_3$};
+   \node[circle, draw, red](x23) at (13.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top3) at (12,3) {$x_4$};
+
+   
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot3) -- (x13);
+   \draw[->] (bot3) -- (x23);
+   \draw[->] (x13) -- (x33);
+   \draw[->] (x33) -- (top3);
+   \draw[->] (x23) -- (top3);
+   
+   \node[text = black] (lst1) at (12,-1) {$[x_1, x_2]$};
+   
+   
+   \draw[->] (14.5, 1.5) -- (15.5,1.5);
+	
+	
+   \node[circle, draw](bot4) at (18,0) {$\bot$};
+   \node[circle, draw, red](x14) at (16.75,0.9) {$x_1$};
+   \node[circle, draw, red](x34) at (16.9,2.25) {$x_3$};
+   \node[circle, draw, red](x24) at (19.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top4) at (18,3) {$x_4$};
+
+   
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot4) -- (x14);
+   \draw[->] (bot4) -- (x24);
+   \draw[->] (x14) -- (x34);
+   \draw[->] (x34) -- (top4);
+   \draw[->] (x24) -- (top4);
+   
+   \node[text = black] (lst1) at (18,-1) {$[x_3, x_2]$};
+
+
+
+
+  \draw[->] (20.5, 1.5) -- (21.5,1.5);
+	
+	
+   \node[circle, draw](bot5) at (24,0) {$\bot$};
+   \node[circle, draw, red](x15) at (22.75,0.9) {$x_1$};
+   \node[circle, draw, red](x35) at (22.9,2.25) {$x_3$};
+   \node[circle, draw, red](x25) at (25.25,1.5) {$x_2$};
+   \node[circle, draw, red](top5) at (24,3) {$x_4$};
+
+   
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot5) -- (x15);
+   \draw[->] (bot5) -- (x25);
+   \draw[->] (x15) -- (x35);
+   \draw[->] (x35) -- (top5);
+   \draw[->] (x25) -- (top5);
+   
+   \node[text = black] (lst1) at (24,-1) {$[x_4]$};
+%   \node[circle, draw](6) at (4,1) {6};
+   %\draw (top) edge[draw = blue, in=70,out=110,loop] node[text = blue, above] {F} ();
+   %\draw (bot) edge[->, draw = blue, bend left] node[left, text = blue] {F} (0); 
+
+%   \node[circle, draw](3) at (6,1) {3};
+%   \node[circle, draw](5) at (6,0) {5};
+   %\draw (2) edge [in=60,out=120,loop] (2);
+\end{tikzpicture}
+	}
+\caption{Algorithme de recherche d'éléments maximaux}
+\end{figure}
+
+
+Cette construction est effectuée par la fonction \code{build\_sup\_candidate} et ses deux fonctions auxiliaires précédentes, lignes 134 à 148. Si l'algorithme est simple à comprendre et à formuler, il est difficile de montrer que la liste des candidats qu'on obtient à la fin de son exécution contient bien l'unique sup d'un sous-ensemble, lorsque celui-ci est dirigé et non vide. S'il est vide, son sup est l'élément bottom.
+
+\begin{coq}
+sup D := hd bottom (build_sup_candidate D)
+\end{coq}
+
 
 \subsubsection{Preuve de correction}
 
-(Ne pas expliquer toute la preuve, seulement les principales difficultés !)
+La longue preuve de correction de cet algorithme se base sur plusieurs axes. On montre par étapes que :
+
+\begin{itemize}
+\item[1.] la liste qu'on construit au fur et à mesure contient uniquement des éléments deux à deux incomparables (lignes 169 à 212)
+\item[2.] cette liste ne contient que des éléments contenus dans le sous-ensemble $D \subseteq X$ (lignes 215 à 232)
+\item[3.] la liste ne contient pas de dupliqués, chaque élément y apparaît au plus une fois (lignes 235 à 262)
+\item[4.] les éléments de la liste \code{candidate} finale dominent tous les éléments de $D$, i.e. que tout élément de $D$ est inférieur à un élément de la liste (lignes 266 à 441)
+\item[5.] la liste finale contient au plus un unique élément si l'ensemble $D$ est dirigé, i.e. sa longueur est au plus égale à 1 (lignes 444 à 472).
+\end{itemize}
 
 
+Détaillons un peu le point 4., le plus complexe. L'invariant principal que l'on cherche à obtenir est que chaque élément de $D$ déjà traité par l'algorithme est dominé par un élément de la liste de candidats en cours de construction. C'est à dire que si on a fini de traiter les éléments contenus dans une sous-liste \code{lst}, alors : $\forall x \in D$, soit $x$ n'est pas dans \code{lst} (il n'a pas encore été vu), soit $\exists y \in$ \code{candidats}, $x \leq y$.
 
-\section{Limitations et approfondissements possibles}
 
-Une section pour dire ce qui reste améliorable, et ce qu'on aurait aimé faire avec plus de temps (nouveaux changements possibles sur B, application en théorie des catégories, etc ?)
+\begin{coq}
+Lemma main_invariant D : forall lst x, Is_true (D x) -> not (In x lst) 
+    \/ exists y, In y (build_sup_candidate_aux D lst nil) /\ x <= y.
+\end{coq}
+
+Ce résultat fait appel à des lemmes assez précis et techniques, comme \code{In\_update\_is\_commutative} qui établit que cette propriété reste vérifiée peu importe l'ordre dans lequel on examine deux éléments pour mettre à jour la liste des \code{candidats}, ou encore \code{build\_sup\_domination\_update\_elim} qui établit que si un élément $x$ est dominé par les \code{candidats} avant de traiter un autre élément, il reste dominé après la mise à jour due à ce nouvel élément, et de nombreux autres.
+
+Avec tous ces résultats intermédiaires, on peut enfin construire un CPO par dessus un ordre partiel fini dont la seule hypothèse est l'existence d'un élément bottom donnée par :
+
+\begin{coq}
+ Variable bottom : X.
+ Hypothesis bottom_is_bot : forall (x : X), bottom <= x).
+\end{coq}
+
+
 
 
 \section*{Conclusion}
+
+Pour résumer, le stage a abouti à une bibliothèque modulaire et quasi minimale en terme d'axiomes permettant de formaliser les ordres et deux structures ordonnées essentielles : les CPOs et les treillis complets. Par le biais de la définition de structures de vérité définies par la bibliothèque (ou par l'utilisateur), le projet englobe des ensembles et des visées très larges, allant des Propositions infinies avec leurs éléments indécidables aux ensembles finis et calculables. De plus, quelques structures exemples ont été proposés, et certains résultats ont été démontrés en Coq à l'aide de cette bibliothèque.
+
+\medskip
+
+Pour aller plus loin, des pistes supplémentaires à explorer ont été envisagées. D'abord, il reste le problème de la nécessité d'utiliser l'axiome \code{functional\_extensionality} pour la manipulation des ensembles finis. Pour améliorer la bibliothèque à ce sujet, nous aurions pu tenter de passer à SSReflect, un sous-langage de Coq particulièrement adapté à la manipulation de telles structures. Une autre solution envisagée que nous aurions mise en place si nous avions eu plus de temps est une restructuration des valeurs de vérité \code{B} pour y intégrer par exemple une notion d'égalité définie par l'utilisateur ou la bibliothèque, avec ses propres propriétés.
+
+On pourrait aussi chercher du côté des ensembles de valeurs de vérité qui seraient pertinents à ajouter, ou modifier la définition de \code{B} de sorte à pouvoir travailler dans des logiques à trois éléments ou à un nombre fini d'éléments distincts de \code{True} et \code{False}. Nous avons tenté des approches permettant de transformer un CPO fini quelconque en ensemble de valeurs de vérité, sur lequel nous pourrions définir de nouveaux CPOs à leur tour, mais ces tentatives n'ont pas abouti. En l'état, il reste à explorer la possibilités d'ensembles de valeurs de vérités infinies distinctes de \code{Prop}.
+
+Enfin, ce sujet appelle à un sujet de thèse bien plus vaste dans lequel les ordres et notamment les CPOs pourraient être utilisés conjointement avec la théorie des catégories pour améliorer le noyau de Coq, notamment en ce qui concerne la coinduction et ses failles.
 
 
 \bibliographystyle{unsrt}
@@ -918,7 +1118,6 @@ Une section pour dire ce qui reste améliorable, et ce qu'on aurait aimé faire 
 \section{Code : définition complète des valeurs de vérité B}
 \label{annexe}
 
-Définition de l'ensemble des valeurs de vérité.
 \begin{coq}
 Class B_param := { B : Type;
   K : Type -> Type;
@@ -959,5 +1158,46 @@ Class B_param := { B : Type;
   memo_spec (X : valid_type) : forall P x, is_true (memo X P x) <-> is_true (P x);
   }.
 \end{coq}
+
+
+Pour les explications sur la fonction de mémoïsation \code{memo}, voir \ref{memo}.
+
+\newpage
+
+\section{Matching de types dépendants}
+\label{dep}
+
+Regardons l'example suivant, issu d'une preuve Coq du fichier \code{FiniteSet.v}:
+
+\begin{verbatim}
+1 subgoal
+A : Type
+B : Type
+Afin : fin A
+Bfin : fin B
+a : A -> B
+EQB : el Bfin = nil
+EQA : el Afin = nil
+______________________________________(1/1)
+In a
+  (match el Afin as l return (el Afin = l -> list (A -> B)) with
+   | nil => fun Heq : el Afin = nil => empty_fun Heq :: nil
+   | c :: qc => fun _ : el Afin = c :: qc => nil
+   end eq_refl)
+\end{verbatim}
+
+
+Dans cet exemple, on sait que \code{(el Afin) = nil} par l'hypothèse \code{EQA}. On aimerait donc simplement évaluer le goal, car on sait être dans le cas \code{nil} qui donne \code{fun Heq : el Afin = nil => empty\_fun Heq :: nil}. Or les tactiques comme \code{simpl} ou \code{cbn} échoue. Une tentative de remplacer \code{(el Afin)} dans le code par la tactique \code{rewrite EQA} (ou \code{induction EQA}), pour forcer le match à s'évaluer, donne l'erreur suivante :
+
+\begin{verbatim}
+Abstracting over the term "l" leads to a term [...] which is ill-typed.
+Reason is: Illegal application: 
+The term "@empty_fun" [...] cannot be applied to the terms [...].
+The 4th term has type "el Afin = l0" which should be coercible to "empty Afin".
+\end{verbatim}
+
+Or ici on sait que dans le cas où cette égalité est utilisée, \code{l0 = nil} et même directement que Afin est vide car par l'hypothèse EQA, \code{el Afin = nil}. Ici, pour contourner le problème, j'ai réécrit le goal de sorte d'y faire disparaitre Heq, en le remplaçant par une hypothèse "\code{Em : empty Afin}" facile à prouver. Ainsi, on peut faire le \textit{rewrite} sur EQA sans plus de problème. Le morceau de preuve analysé ici se trouve aux lignes 175 à 182 du fichier \code{FiniteSet.v}.
+
+Parfois, le conflit n'est pas aussi simple à résoudre que dans ce premier cas...
 
 \end{document}
