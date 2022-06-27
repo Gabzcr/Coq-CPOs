@@ -66,11 +66,11 @@ stage encadré par Damien Pous et Yannick Zakowski}
 
 Parmi toutes les révolutions qu'a permis le développement de l'informatique théorique et expérimentale dans le milieu de la recherche, la preuve formelle occupe une place de choix. Parce qu'une preuve est difficilement aussi fiable et rigoureuse que lorsque qu'elle est validée mécaniquement par ordinateur au sein d'une théorie cohérente, ce domaine de recherche offre la promesse d'une garantie sans précédent, en plus de permettre l'élaboration de preuves jusque là inaccessibles à cause de leur longueur et de leur complexité (par exemple, le théorème des quatre couleurs, dont la démonstration de 1991 exigeait de traiter 1478 cas critiques \cite{4color}). L'un des fers de lance de la preuve formelle est \textbf{Coq}, un assistant de preuve développé depuis les années 1980.
 
-Si la bibliothèque standard de Coq contient déjà de nombreux modules, dont un petit module sur les Ordres Partiels Complets (CPO) \cite{coqCPO}, il manque encore à Coq une bibliothèque générale regroupant les principaux résultats de la théorie des ordres partiels \cite{main}. Ces résultats sont utiles à de nombreux domaines de l'informatique, comme la sémantique, la logique, l'interprétation abstraite, l'optimisation ou l'algorithmie. Des travaux sur le sujet existent en théorie des domaines \cite{dockins}. Des versions simplifiées et spécialisées de ces notions ont d'ailleurs parfois été déjà formalisés en Coq pour les besoins de projets concrets, comme les projets de Damien Pous sur la coinduction \cite{coind-theory} % disponible \href{https://github.com/damien-pous/coinduction}{sur ce lien} 
+Si la bibliothèque standard de Coq contient déjà de nombreux modules, dont un petit module sur les Ordres Partiels Complets (CPO) \cite{coqCPO}, il manque encore à Coq une bibliothèque générale regroupant les principaux résultats de la théorie des ordres partiels \cite{main}. Ces résultats sont utiles à de nombreux domaines de l'informatique, comme la sémantique, la logique, l'interprétation abstraite, l'optimisation ou l'algorithmique. Des travaux sur le sujet existent en théorie des domaines \cite{dockins}. Des versions simplifiées et spécialisées de ces notions ont d'ailleurs parfois été déjà formalisés en Coq pour les besoins de projets concrets, comme les projets de Damien Pous sur la coinduction \cite{coind-theory} % disponible \href{https://github.com/damien-pous/coinduction}{sur ce lien} 
 et les algèbre relationnelles \cite{relalg}. Ces projets pourraient bénéficier d'une bibliothèque générale, polyvalente et modulaire, dans laquelle les principaux résultats auraient déjà été formalisés sous leur forme la plus générale et réutilisable, adaptée à plusieurs niveaux de structures.
 
 
-En particulier, on dispose sur les CPOs de théorèmes de points fixes, c'est à dire d'éléments qui stabilisent une fonction (définition \ref{fixpoint-def}). Ils ont été étudiés avec des hypothèses variées, et démontrés par de nombreux moyens et à de maintes reprises \cite{main} \cite{proofs} \cite{ktnote}, par exemple avec ou sans méthode déductive, imprédicative, etc. Ces résultats sont centraux dans de nombreux domaines. En sémantique par exemple, on peut donner du sens aux boucles for et while en déterminant le point fixe de leurs programmes. Ils interviennent aussi dans de nombreux algorithmes, comme certains algorithmes qui étudient les relations entre les états d'un graphe
+En particulier, on dispose sur les CPOs de théorèmes de points fixes, c'est à dire d'éléments qui stabilisent une fonction (définition \ref{fixpoint-def}). Ils ont été étudiés avec des hypothèses variées, et démontrés par de nombreux moyens et à de maintes reprises \cite{main} \cite{proofs} \cite{ktnote}, par exemple avec ou sans méthode déductive, imprédicative, etc. Ces résultats sont centraux dans de nombreux domaines. En sémantique par exemple, on peut donner du sens aux boucles for et while en déterminant le point fixe de leurs programmes. Ils interviennent aussi dans de nombreux algorithmes, comme certains algorithmes qui étudient les relations entre les états d'un graphe.
 %TODO : évoquer point fixe et introduction sur à quoi ça sert !
 
 
@@ -162,7 +162,7 @@ C'est déjà le cas ici, car le sup de l'ensemble vide donne bottom par la défi
 %Ainsi je peux restreindre la définition de CPO au seul point (ii), car le sup de l'ensemble vide donne bottom par la définition de la borne supérieure : $\bigsqcup \emptyset = \bot$.
 %\yz{Du coup peut-être poser ta déf comme ii et faire remarquer que cela implique (i) dans ton setup ?}
 
-Par ailleurs, certains auteurs n'imposent pas du tout l'existence d'un élément bottom dans $P$ et parlent plutôt de \textbf{CPO pointé} ("dcppo") lorsque bottom existe. À l'inverse, on peut parler de \textbf{pré-CPO} (dcpo) lorsqu'on veut laisser les considérations d'existence de l'élément bottom de côté, ou retirer $\bot$ de la structure de CPO \cite[page 175]{main}.
+Par ailleurs, certains auteurs n'imposent pas du tout l'existence d'un élément bottom dans $P$ et parlent plutôt de \textbf{CPO pointé} (\og dcppo\fg{}) lorsque bottom existe. À l'inverse, on peut parler de \textbf{pré-CPO} (dcpo) lorsqu'on veut laisser les considérations d'existence de l'élément bottom de côté, ou retirer $\bot$ de la structure de CPO \cite[page 175]{main}.
 
 Dans tout ce projet, on ne travaillera jamais avec des pré-CPO, toujours avec des CPO contenant $\bot$ car l'existence d'un élément bottom (et en particulier d'un élément tout court) dans $P$ sera une condition nécessaire à l'existence et au calcul de points fixes.
 
@@ -186,7 +186,6 @@ Les différents théorèmes suivants statuent de l'existence d'un point fixe d'u
 
 \begin{definition}{\textbf{Point fixe d'une fonction\\}}
 \label{fixpoint-def}
-  %\yz{Ne devrais-tu pas considérer un endo de P dans P dans cette définition ?}
 Soient $(P, \leq_P)$ un ensemble ordonné, $F : P \rightarrow P$ une fonction et $x \in P$. 
 
 $x$ est un point fixe de $F$ si $F(x) = x$.
@@ -333,7 +332,7 @@ Parmi les différentes façon possibles de modéliser les structures ordonnées,
 
 Le premier critère, et le plus important de tous, est que nos structures englobent bien tous les objets mathématiques qui correspondent à notre définition. Pour comprendre l'étendue de cet enjeux, explicitons une des spécificités de Coq : la différence entre les booléens \code{bool} et les propositions \code{Prop}.
 
-Les booléens forment un ensemble à deux éléments \{\code{true}, \code{false}\} muni des opérations booléennes usuelles ("ou", "et", "non", "implique", etc.). Ainsi, une évaluation booléenne d'une propriété est soit vraie soit fausse, et tout est décidable. En particulier, un "il existe" ou "pour tout" booléen n'existe pas toujours, on ne peut le définir que lorsque ça reste décidable (par exemple, sur une liste finie).
+Les booléens forment un ensemble à deux éléments \{\code{true}, \code{false}\} muni des opérations booléennes usuelles (\og ou\fg{}, \og et\fg{}, \og non\fg{}, \og implique\fg{}, etc.). Ainsi, une évaluation booléenne d'une propriété est soit vraie soit fausse, et tout est décidable. En particulier, un \og il existe\fg{} ou \og pour tout\fg{} booléen n'existe pas toujours, on ne peut le définir que lorsque ça reste décidable (par exemple, sur une liste finie).
 
 Au contraire, les Propositions de Coq constituent un ensemble bien plus vaste (infini, en fait) qui encode entre autres toute la logique du premier ordre. On y trouve les prédicats de base \code{True} et \code{False} mais aussi tous les opérateurs logiques sans restriction $\backslash/, /\backslash, \implies, \neg, \exists, \forall$, une notion d'égalité $=$ etc. \code{Prop} capture en particulier les propriétés indécidables. Par exemple, on peut exprimer dans \code{Prop} le fait qu'une machine de Turing s'arrête et encoder le problème de l'arrêt, qu'on peut prouver indécidable.
 
@@ -406,7 +405,7 @@ Avant de rentrer dans le vif du sujet, donnons rapidement un plan du projet et l
 \begin{itemize}
 \item[•] \code{Basic\_CPO.v} est la première version écrite de la bibliothèque, et la plus proche du livre de référence. Elle suit les preuves mathématiques presque pas à pas, quitte à faire quelques détours inutiles. C'est la moins complexe de tous, et donc la plus simple à lire et à comprendre. Je me servirai parfois du travail fait dans ce fichier pour illustrer mes explications sans rajouter la difficulté de la paramétrisation ou de définitions plus alambiquées et plus générales.
 \item[•] \code{Propositional\_CPO.v} contient une version alternative de la bibliothèque dans lequel le sup est défini comme une proposition liant un ensemble dirigé et un élément, plutôt qu'une fonction associant un élément à un ensemble dirigé. Nous y reviendrons en \ref{SupProp}.
-\item[•] \code{Parametrized\_CPO.v} contient une première version de la bibliothèque des CPOs paramétrisée par un ensemble de valeurs de vérité, appelé "B" tout au long du projet. Il sera détaillé en \ref{param}.
+\item[•] \code{Parametrized\_CPO.v} contient une première version de la bibliothèque des CPOs paramétrisée par un ensemble de valeurs de vérité, appelé \og B\fg{} tout au long du projet. Il sera détaillé en \ref{param}.
 \end{itemize}
 
 \medskip
@@ -439,7 +438,7 @@ Notre ensemble B contient une fonction d'évaluation \code{is\_true : B -> Prop}
 Lemma belongs_to S x : is_true (S x).
 \end{coq}
 
-Ensuite, on souhaite doter B d'un élément \code{Faux} noté \code{BFalse}, et des opérations classiques "ou", "et" et l'implication : \textbackslash /, /\textbackslash ~ et \code{->}, de manière à ce que qu'ils se comportent comme attendu avec l'évaluation \code{is\_true}. Par exemple pour \code{BFalse} et /\textbackslash, ça donne :
+Ensuite, on souhaite doter B d'un élément \code{Faux} noté \code{BFalse}, et des opérations classiques \og ou\fg{}, \og et\fg{} et l'implication : \textbackslash /, /\textbackslash ~ et \code{->}, de manière à ce que qu'ils se comportent comme attendu avec l'évaluation \code{is\_true}. Par exemple pour \code{BFalse} et /\textbackslash, ça donne :
 
 \begin{coq}
   BFalse : B;
@@ -491,7 +490,7 @@ La tactique \code{unfold\_spec} a précisément été créée dans la bibliothè
 
 Une question qui s'est naturellement posée durant le stage est la suivante : est-il possible de définir une autre structure de vérité, différente de \code{bool} et \code{Prop}, qui soit pertinente ou ouvre de nouvelles possibilités. Nous avons exploré les logiques à trois valeurs ou à un nombre fini de valeurs \cite{manylogic}, et considéré la logique de Łukasiewicz sur $[0,1]$. Mais nous avons rencontré des difficultés à les transcrire dans notre modèle.
 
-Après avoir rencontré quelques difficultés en manipulant les spécifications notamment de l'implication et du "ou" vis-à-vis de l'évaluation, nous en sommes venus à la conclusion que l'évaluation permet, dans le cas fini du moins, de séparer les éléments de notre ensemble $B$ en deux catégories. D'abord, les éléments évalués à true : $\text{\code{is\_true}}^{-1}(True)$ qui se comportent tous comme le booléen \code{true}, et les autres éléments qui se comportent tous comme le booléen \code{false}. Aussi il semble impossible d'ajouter une troisième valeur pertinente dans le cas fini, qui soit réellement distincte de True et False. En revanche, il reste une possibilité de trouver un $B$ pertinent différent de Prop dans le cas infini.
+Après avoir rencontré quelques difficultés en manipulant les spécifications notamment de l'implication et du \og ou\fg{} vis-à-vis de l'évaluation, nous en sommes venus à la conclusion que l'évaluation permet, dans le cas fini du moins, de séparer les éléments de notre ensemble $B$ en deux catégories. D'abord, les éléments évalués à true : $\text{\code{is\_true}}^{-1}(True)$ qui se comportent tous comme le booléen \code{true}, et les autres éléments qui se comportent tous comme le booléen \code{false}. Aussi il semble impossible d'ajouter une troisième valeur pertinente dans le cas fini, qui soit réellement distincte de True et False. En revanche, il reste une possibilité de trouver un $B$ pertinent différent de Prop dans le cas infini.
 
 Des tentatives de définition d'un ensemble $B$ fini distinct de \code{bool} ont été écrites dans le fichier \code{Applications.v}, section \code{CPO\_based\_Truth\_values}, ligne 792, notamment pour transcrire une logique à trois éléments $\{\bot, U, \top\}$. Elles vont dans le sens constaté plus haut, le troisième élément $U$ se comporte soit de la même manière que $\top$, soit de la même manière que $\bot$, sans qu'il soit possible de définir autrement l'implication en respectant les spécifications.
 
@@ -553,7 +552,7 @@ La toute première représentation du sup d'un CPO avait donc simplement pour ty
 
 Or, dans le cas où $\mathcal{F}$ n'est pas dirigé, l'ensemble des $\{y ~ | ~ \exists f \in \mathcal{F}, y = f(x)\}$ ne l'est pas non plus donc son sup n'est pas spécifié, et nous ne pouvons pas montrer que le \code{sup F} défini ici est bien une fonction monotone dans le cas où il n'est pas spécifié. Donc, nous ne pouvons pas établir que la définition toute entière est bien typée.
 
-Pour cette raison, j'ai rapidement abandonné cette tentative de formalisation sans même la garder dans le dépot git, au profit d'un sup défini uniquement sur les ensembles dirigés. Et ce malgré la nécessité d'utiliser des types dépendants, un peu plus complexes à manipuler, pour définir le type des ensembles dirigés.
+Pour cette raison, j'ai rapidement abandonné cette tentative de formalisation sans même la garder dans le dépôt git, au profit d'un sup défini uniquement sur les ensembles dirigés. Et ce malgré la nécessité d'utiliser des types dépendants, un peu plus complexes à manipuler, pour définir le type des ensembles dirigés.
 
 
 
@@ -655,7 +654,7 @@ Ensuite, il faut pouvoir définir le sup de $D$. Comme $D$ est dirigé dans $Y$,
     {| sup D := sup (exist (Directed leq) (complete_body D) _) ; |}.
 \end{coq}
 
-Pour adapter ces définition, il nous faudrait définir \code{D'} à image dans \code{B} au lieu de \code{Prop}, et donc munir \code{B} d'un opérateur "et" dépendant, dont la deuxième condition dépende de la première, comme \code{\&} dans \code{Prop}.
+Pour adapter ces définition, il nous faudrait définir \code{D'} à image dans \code{B} au lieu de \code{Prop}, et donc munir \code{B} d'un opérateur \og et\fg{} dépendant, dont la deuxième condition dépende de la première, comme \code{\&} dans \code{Prop}.
 
 \medskip
 
@@ -806,19 +805,21 @@ Enfin, la manipulation des CPO définis aussi abstraitement est très fastidieus
 
 \medskip
 
-Pour toutes ces raisons, cette approche a été par la suite laissée de côté pour s'intéresser à une première version de CPOs paramétrisés par les valeurs de vérité de la bibliothèque, qui a fini par céder la place à la version finale du projet.
+Pour toutes ces raisons, cette approche a été par la suite laissée de côté pour s'intéresser à une première version de CPOs paramétrés par les valeurs de vérité de la bibliothèque, qui a fini par céder la place à la version finale du projet.
 
 
 \subsection{Première paramétrisation : Forall dépendants de l'ensemble support de l'ordre partiel}
 \label{param}
 
-Dans notre première tentative de définition d'un ensemble \code{B} de valeurs de vérité, qui se trouve dans le fichier \code{Parametrized\_CPO.v}, nous avons séparé la structure indépendante des valeurs de vérité, qui contient \code{BTrue} et \code{BFalse}, l'évaluation, le "ou", le "et" et l'implication; d'une structure que l'on vient poser par-dessus qui munit l'ensemble des \code{Forall} et \code{Exists} dont nous avons besoin. Le but était de garder un ensemble de valeurs de vérité le plus indépendant possible de l'ensemble de base de notre CPO, or ces deux dernières opérations doivent se faire sur un ensemble à spécifier dans la définition.
+Dans notre première tentative de définition d'un ensemble \code{B} de valeurs de vérité, qui se trouve dans le fichier \code{Parametrized\_CPO.v}, nous avons séparé la structure indépendante des valeurs de vérité, qui contient \code{BTrue} et \code{BFalse}, l'évaluation, le \og ou\fg{}, le \og et\fg{} et l'implication; d'une structure que l'on vient poser par-dessus qui munit l'ensemble des \code{Forall} et \code{Exists} dont nous avons besoin. Le but était de garder un ensemble de valeurs de vérité le plus indépendant possible de l'ensemble de base de notre CPO, or ces deux dernières opérations doivent se faire sur un ensemble à spécifier dans la définition.
 
 Le principal problème est qu'au fur et à mesure du développement de la bibliothèque, de plus en plus d'opérations \code{Forall} et \code{Exists} devenaient nécessaires à définir sur des ensembles variés : $X$, $X \rightarrow X$ et les fonctions monotones, les sous-ensembles de $X$ et sous-ensembles dirigés ($X \rightarrow B$), et même les entiers si on veut suivre la méthode du théorème I. Pour éviter cette démultiplication d'opérateurs, nous avons d'abord essayé de définir des \code{Forall} et \code{Exists} généraux, sur des sous-ensembles de Types en sélectionnant les éléments selon une propriétés. Mais il en restait plusieurs à définir (fonctions et sous-ensembles).
 
 Cette version n'était pas pratique pour les utilisateurs. Elle les force à définir eux-mêmes tous ces opérateurs au moment de créer leur CPO et leur valeur de vérité. Et les opérations sur les valeurs de vérité, omniprésentes, sont également laborieuses à utiliser dans les preuves avec de nombreux soucis de typage et de paramétrisation implicite qui apparaissent à la manipulation conjointe de \code{B} et $X$. 
 
-Comme nous l'avons déjà évoqué, ce problème a été résolu en rajoutant à notre structure de valeurs de vérité la définition d'un opérateur \code{K} qui sélectionne les types "valides" (avec un certains nombre de propriétés de clôture) et une définition de \code{Forall} et \code{Exists} généraux sur ces types. De plus, ainsi \code{B} ne dépend plus vraiment de l'ensemble \code{X} sur lequel on veut définir notre structure ordonnée de CPO ou de treillis, ce qui retire une couche de définition et de complexité notamment dans la manipulation par l'utilisateur et la paramétrisation implicite de Coq.
+Comme nous l'avons déjà évoqué, ce problème a été résolu en rajoutant à notre
+structure de valeurs de vérité la définition d'un opérateur \code{K} qui
+sélectionne les types \og valides\fg{} (avec un certains nombre de propriétés de clôture) et une définition de \code{Forall} et \code{Exists} généraux sur ces types. De plus, ainsi \code{B} ne dépend plus vraiment de l'ensemble \code{X} sur lequel on veut définir notre structure ordonnée de CPO ou de treillis, ce qui retire une couche de définition et de complexité notamment dans la manipulation par l'utilisateur et la paramétrisation implicite de Coq.
 
 C'est aussi à partir de cette étape qu'est apparue l'impossibilité de définir un sous-CPO en tant que CPO sans rajouter de types dépendants dans \code{B}, comme vu plus haut.
 
@@ -1167,7 +1168,7 @@ Pour les explications sur la fonction de mémoïsation \code{memo}, voir \ref{me
 \section{Matching de types dépendants}
 \label{dep}
 
-Regardons l'example suivant, issu d'une preuve Coq du fichier \code{FiniteSet.v}:
+Regardons l'exemple suivant, issu d'une preuve Coq du fichier \code{FiniteSet.v}:
 
 \begin{verbatim}
 1 subgoal
@@ -1196,7 +1197,7 @@ The term "@empty_fun" [...] cannot be applied to the terms [...].
 The 4th term has type "el Afin = l0" which should be coercible to "empty Afin".
 \end{verbatim}
 
-Or ici on sait que dans le cas où cette égalité est utilisée, \code{l0 = nil} et même directement que Afin est vide car par l'hypothèse EQA, \code{el Afin = nil}. Ici, pour contourner le problème, j'ai réécrit le goal de sorte d'y faire disparaitre Heq, en le remplaçant par une hypothèse "\code{Em : empty Afin}" facile à prouver. Ainsi, on peut faire le \textit{rewrite} sur EQA sans plus de problème. Le morceau de preuve analysé ici se trouve aux lignes 175 à 182 du fichier \code{FiniteSet.v}.
+Or ici on sait que dans le cas où cette égalité est utilisée, \code{l0 = nil} et même directement que Afin est vide car par l'hypothèse EQA, \code{el Afin = nil}. Ici, pour contourner le problème, j'ai réécrit le goal de sorte d'y faire disparaître Heq, en le remplaçant par une hypothèse \og \code{Em : empty Afin}\fg{} facile à prouver. Ainsi, on peut faire le \textit{rewrite} sur EQA sans plus de problème. Le morceau de preuve analysé ici se trouve aux lignes 175 à 182 du fichier \code{FiniteSet.v}.
 
 Parfois, le conflit n'est pas aussi simple à résoudre que dans ce premier cas...
 
