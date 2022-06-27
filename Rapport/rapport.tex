@@ -334,18 +334,29 @@ Le premier critère, et le plus important de tous, est que nos structures englob
 
 Les booléens forment un ensemble à deux éléments \{\code{true}, \code{false}\} muni des opérations booléennes usuelles (\og ou\fg{}, \og et\fg{}, \og non\fg{}, \og implique\fg{}, etc.). Ainsi, une évaluation booléenne d'une propriété est soit vraie soit fausse, et tout est décidable. En particulier, un \og il existe\fg{} ou \og pour tout\fg{} booléen n'existe pas toujours, on ne peut le définir que lorsque ça reste décidable (par exemple, sur une liste finie).
 
-Au contraire, les Propositions de Coq constituent un ensemble bien plus vaste (infini, en fait) qui encode entre autres toute la logique du premier ordre. On y trouve les prédicats de base \code{True} et \code{False} mais aussi tous les opérateurs logiques sans restriction $\backslash/, /\backslash, \implies, \neg, \exists, \forall$, une notion d'égalité $=$ etc. \code{Prop} capture en particulier les propriétés indécidables. Par exemple, on peut exprimer dans \code{Prop} le fait qu'une machine de Turing s'arrête et encoder le problème de l'arrêt, qu'on peut prouver indécidable.
+Au contraire, les propositions de Coq constituent un ensemble bien plus vaste
+(infini, en fait) qui encode entre autres toute la logique du premier ordre. On
+y trouve les prédicats de base \code{True} et \code{False} mais aussi tous les
+opérateurs logiques sans restriction $\lor,\land, \implies, \neg, \exists,
+\forall$, une notion d'égalité $=$, etc. \code{Prop} capture en particulier les propriétés indécidables. Par exemple, on peut exprimer dans \code{Prop} le fait qu'une machine de Turing s'arrête et encoder le problème de l'arrêt, qu'on peut prouver indécidable.
 
 \medskip
 
-Une question se pose alors, quel type choisir pour représenter les sous-ensembles ? Sur un ensemble $X$, une partie $S \subseteq X$ n'est autre qu'une sélection d'éléments dans $X$, donc la formalisation naturelle est le choix du type \code{X -> Prop} en Coq. Cette formalisation est en effet la seule qui permettrait de définir l'ensemble \code{Prop} comme un treillis complet dont l'ordre $P \leq Q$ est donné par $P \rightarrow Q$ et le sup d'un ensemble $\mathcal{P}$ est donné par $\bigvee \mathcal{P} = \exists P \in \mathcal{P}, P$. Car on doit par exemple pouvoir y définir le sous-ensemble des propositions décidables, qui est lui même indécidable (problème de la décision).
+Une question se pose alors, quel type choisir pour représenter les
+sous-ensembles ? Sur un ensemble $X$, une partie $S \subseteq X$ n'est autre
+qu'une sélection d'éléments dans $X$, donc la formalisation naturelle est le
+choix du type \code{X -> Prop} en Coq. Cette formalisation est en effet la seule
+qui permettrait de définir l'ensemble \code{Prop} comme un treillis complet dont
+l'ordre $P \leq Q$ est donné par $P \rightarrow Q$ et le sup d'un ensemble
+$\mathcal{P}$ est donné par $\bigvee \mathcal{P} = \exists P \in \mathcal{P},
+P$. En effet, on doit par exemple pouvoir y définir le sous-ensemble des propositions décidables, qui est lui même indécidable (problème de la décision).
 
-Or ce simple choix ne permet plus de formaliser le treillis complet à deux éléments constitué des booléens \code{bool} muni de l'ordre code{false} $\leq$ \code{true}. Nous aimerions en effet définir sur cette structure le sup d'un sous-ensemble $S \subseteq X$ comme suit : \code{if true} $\in S$ \code{then true else false}. Mais pour cela, nous avons besoin de décider si \code{true} appartient à l'ensemble $S$ ou non, ce qui correspondrait à décider la Proposition Coq ($S$ \code{true}). Or on ne sait pas décider une proposition en général.
+Or ce simple choix ne permet plus de formaliser le treillis complet à deux éléments constitué des booléens \code{bool} muni de l'ordre \code{false} $\leq$ \code{true}. Nous aimerions en effet définir sur cette structure le sup d'un sous-ensemble $S \subseteq X$ comme suit : \code{if true} $\in S$ \code{then true else false}. Mais pour cela, nous avons besoin de décider si \code{true} appartient à l'ensemble $S$ ou non, ce qui correspondrait à décider la proposition Coq ($S$ \code{true}). Or on ne sait pas décider une proposition en général.
 
 Notez que décider une proposition est encore plus fort que de supposer le tiers exclu, qui statue simplement que la proposition suivante est vraie :
 
 \begin{coq}
-forall (P : Prop), P \/  (P -> False)
+forall (P : Prop), P \/ (P -> False)
 \end{coq}
 
 Mais ne sait pas déterminer en dehors d'un environnement de preuve lequel des deux côté du $\lor$ est vérifié. Nous aurions plutôt besoin du résultat suivant, bien plus contraignant, et qui permet de matcher vers l'un ou l'autre des résultats :
@@ -356,7 +367,7 @@ forall (P : Prop), { P } + {P -> False}
 
 \medskip
 
-Ici, le problème vient donc des valeurs de vérité que nous avons choisies pour définir nos sous-ensembles, et donc pour définir notre treillis et son sup. Sur le cas précis des booléens en tant que treillis complet, nous voudrions travailler dans \code{bool} au lieu de \code{Prop} et définir les sous-ensembles comme des fonctions \code{S : X -> bool}. Mais une telle définition ne fonctionnerait plus pour définir le treillis des Propositions, par exemple.
+Ici, le problème vient donc des valeurs de vérité que nous avons choisies pour définir nos sous-ensembles, et donc pour définir notre treillis et son sup. Sur le cas précis des booléens en tant que treillis complet, nous voudrions travailler dans \code{bool} au lieu de \code{Prop} et définir les sous-ensembles comme des fonctions \code{S : X -> bool}. Mais une telle définition ne fonctionnerait plus pour définir le treillis des propositions, par exemple.
 
 Pour contourner ce problème, nous avons choisi d'inclure dans la définition des structures ordonnées une paramétrisation par un ensemble de valeurs de vérité, nommé \code{B}, construit de sorte à pouvoir englober à la fois \code{Prop} et \code{Bool}. Les sous-ensembles (dirigés ou non), sont alors définis à valeurs dans \code{X -> B}. L'implémentation et la réalisation concrètes seront donnés plus bas, en \ref{verites}. On obtient ainsi des objets des types suivants :
 
@@ -388,7 +399,7 @@ Malheureusement, les théorèmes I et III ne fournissent pas de telles preuves. 
 
 Mais la preuve du théorème II (Pataraia) fournit une preuve astucieuse et un peu détournée qui a l'avantage d'être entièrement constructive. Avec un peu de travail, nous avons réussi à l'adapter en Coq de sorte à garder cette constructivité. En particulier, dans le cas des CPOs finis qui prennent leurs valeurs de vérité dans les booléens, le plus petit point fixe peut être entièrement calculé et fournir l'élément concret du CPO correspondant. Il est donné dans le fichier \code{CPO.v} par \code{lfp\_II}. 
 
-Le calcul a été testé avec succès dans le fichier \code{Applications.v} sur le CPO à trois éléments $\bot <= x1 <= x2$ et la fonction $F$ monotone définie par $F(\bot) = F(x1) = x1$ et $F(x2) = x2$. On obtient bien $x_1$ en point fixe minimal par calcul de Coq.
+Le calcul a été testé avec succès dans le fichier \code{Applications.v} sur le CPO à trois éléments $\bot \leq x_1 \leq x_2$ et la fonction $F$ monotone définie par $F(\bot) = F(x_1) = x_1$ et $F(x_2) = x_2$. On obtient bien $x_1$ en point fixe minimal par calcul de Coq.
 
 
 
@@ -438,11 +449,11 @@ Notre ensemble B contient une fonction d'évaluation \code{is\_true : B -> Prop}
 Lemma belongs_to S x : is_true (S x).
 \end{coq}
 
-Ensuite, on souhaite doter B d'un élément \code{Faux} noté \code{BFalse}, et des opérations classiques \og ou\fg{}, \og et\fg{} et l'implication : \textbackslash /, /\textbackslash ~ et \code{->}, de manière à ce que qu'ils se comportent comme attendu avec l'évaluation \code{is\_true}. Par exemple pour \code{BFalse} et /\textbackslash, ça donne :
+Ensuite, on souhaite doter B d'un élément \code{Faux} noté \code{BFalse}, et des opérations classiques \og ou\fg{}, \og et\fg{} et l'implication : $\lor$, $\land$ et \code{->}, de manière à ce que qu'ils se comportent comme attendu avec l'évaluation \code{is\_true}. Par exemple pour \code{BFalse} et $\land$, ça donne :
 
 \begin{coq}
   BFalse : B;
-  BFalse_spec : ~ (is_true BFalse);
+  BFalse_spec : not (is_true BFalse);
   BAnd : B -> B -> B;
   BAnd_spec : forall b1 b2, 
   				is_true b1 /\ is_true b2 <-> is_true (BAnd b1 b2);
@@ -450,8 +461,8 @@ Ensuite, on souhaite doter B d'un élément \code{Faux} noté \code{BFalse}, et 
 
 La principale difficulté rencontrée pour définir cet ensemble est la définition des opérations \code{forall} $\forall$ et \code{exists} $\exists$. Comme ces opérations doivent être décidables dans le cas où \code{B = bool}, on ne peut pas se permettre de définir ces opérations sur des ensembles quelconques comme dans \code{Prop}. Mais nous voulons au moins définir ces opérations sur $X$, sur l'ensemble des sous-ensembles (dirigés ou non) de X ($\forall Y \subseteq X$ dirigé, [...]) et sur l'ensemble des fonctions monotones $X \rightarrow X$. Nous en aurons besoin dans les preuves de théorèmes de point fixe.
 
-Pour éviter de définir quatre opérations \code{Forall} et \code{Exists} différentes, comme nous l'avions envisagé initialement (cf \ref{param}), nous avons rajouté à la définition de B une opérateur $K$ qui indique sur quels types nous disposons de ces opérations. On appelle \textbf{valides} les types sélectionnés par $K$. $K$ doit vérifier un certain nombres de propriétés. Pour commencer, il faut que l'ensemble $X$ support de notre structure ordonnée soit valide, mais aussi que tous les ensembles mentionnés plus haut le soit. De manière générale, on veut que $K$ soit clôt par passage à l'ensemble des fonctions sur deux types valides $V_1 \rightarrow V_2$, et dans le cas des sous-ensembles $X \rightarrow B$. On veut aussi qu'un sous-type d'un type valide reste valide, i.e. que $K$ soit clôt par sélection d'éléments d'un ensemble valide par une propriété :
-$$ \forall V \in \text{\code{Type}}, \forall P \in (V \rightarrow \text{\code{Prop}}), V \in K \implies \{ v : V ~ | ~ \text{\code{is\_true}} (P ~ v) \} \in K$$.
+Pour éviter de définir quatre opérations \code{Forall} et \code{Exists} différentes, comme nous l'avions envisagé initialement (cf \ref{param}), nous avons rajouté à la définition de B un opérateur $K$ qui indique sur quels types nous disposons de ces opérations. On appelle \textbf{valides} les types sélectionnés par $K$. $K$ doit vérifier un certain nombres de propriétés. Pour commencer, il faut que l'ensemble $X$ support de notre structure ordonnée soit valide, mais aussi que tous les ensembles mentionnés plus haut le soit. De manière générale, on veut que $K$ soit clôt par passage à l'ensemble des fonctions sur deux types valides $V_1 \rightarrow V_2$, et dans le cas des sous-ensembles $X \rightarrow B$. On veut aussi qu'un sous-type d'un type valide reste valide, i.e. que $K$ soit clôt par sélection d'éléments d'un ensemble valide par une propriété :
+$$ \forall V \in \text{\code{Type}}, \forall P \in (V \rightarrow \text{\code{Prop}}), V \in K \implies \{ v : V ~ | ~ \text{\code{is\_true}} (P ~ v) \} \in K.$$
 
 
 $K$ avait d'abord le type \code{Type -> Prop}, pour indiquer quels types sont valides, mais il a fallu plutôt lui donner le type légèrement plus troublant \code{Type -> Type} pour gérer la sélection des types finis, définis au début du fichier \code{FiniteSet.v}, par le \code{Record fin}. Ça se manipule de la même façon.
