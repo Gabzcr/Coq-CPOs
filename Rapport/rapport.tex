@@ -925,13 +925,13 @@ Au cours de mon stage, j'ai eu l'occasion d'utiliser ma bibliothèque pour prouv
 Tout ensemble fini muni d'un ordre partiel et d'un élément bottom est un CPO.
 \end{theorem}
 
-Cette propriété est prouvée par la définition du CPO \code{FinitePO\_to\_CPO} dans la section \code{FiniteOrder} du fichier \code{Applications.v}, lignes 128 à 494. C'était bien plus délicat à démontrer que l'on peut croire de prime abord, notamment pour trouver le sup d'un ensemble dirigé et en prouver les propriété.
+Cette propriété est prouvée par la définition du CPO \code{FinitePO\_to\_CPO} dans la section \code{FiniteOrder} du fichier \code{Applications.v}, lignes 128 à 494. C'était bien plus délicat à démontrer que l'on peut croire de prime abord, notamment pour trouver le sup d'un ensemble dirigé et en prouver les propriétés.
 
 
 \subsubsection{Algorithme utilisé pour obtenir le sup}
 
 Pour trouver le sup d'un sous-ensemble $Y \subseteq X$ dirigé, %on voit notre ensemble ordonné comme un graphe orienté (les arêtes sont donnés par la relation $\leq$) et 
-on parcourt chacun des éléments de $Y$ (i.e. les éléments $x$ de $X$ fini, énumérés dans sa liste, qui satisfont la propriété \code{Y x}) et on maintient à jour une liste \code{candidats} des éléments maximaux rencontrés. Pour se faire, à chaque nouvel élément rencontré, s'il n'y a pas d'éléments plus grand que lui dans la liste de \code{candidats}, on l'ajoute; et on enlève de la liste tous les éléments qui lui sont inférieurs.
+on parcourt chacun des éléments de $Y$ (i.e. les éléments $x$ de $X$ fini, énumérés dans sa liste, qui satisfont la propriété \code{Y x}) et on maintient à jour une liste \code{candidats} des éléments maximaux rencontrés. Pour ce faire, à chaque nouvel élément rencontré, s'il n'y a pas d'élément plus grand que lui dans la liste de \code{candidats}, on l'ajoute; et on enlève de la liste tous les éléments qui lui sont inférieurs.
 
 
 
