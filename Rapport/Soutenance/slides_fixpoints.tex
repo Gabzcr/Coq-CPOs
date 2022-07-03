@@ -1,0 +1,686 @@
+\documentclass{beamer}
+
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\usepackage{bbold}
+
+\usepackage{subcaption}
+\usepackage{listingsutf8}
+\usepackage[french,onelanguage,ruled]{algorithm2e}
+
+\definecolor{ltblue}{rgb}{0,0.4,0.4}
+\definecolor{dkblue}{rgb}{0,0.1,0.6}
+\definecolor{dkgreen}{rgb}{0,0.35,0}
+\definecolor{dkgreen}{rgb}{0,0.35,0}
+\definecolor{dkviolet}{rgb}{0.3,0,0.5}
+\definecolor{dkpink}{rgb}{0.5,0,0.3}
+\definecolor{dkred}{rgb}{0.5,0,0}
+\definecolor{orange}{rgb}{0.9,0.5,0.3}
+\definecolor{violet}{rgb}{0.7,0,0.7}
+
+\usepackage{listings}
+\usepackage{lstcoq}
+
+%\lstset{escapeinside=||}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{shapes}
+
+\uselanguage{French}
+\languagepath{French}
+
+\usetheme{Warsaw}
+
+\usefonttheme[onlymath]{serif}
+
+
+\title[\textit{Partial orders and fixpoint theorems, in Coq} ~~~~~~~~~~~~~~~~~~~~~ \insertframenumber]{Rapport de stage M2 \\
+\textit{Partial orders and fixpoint theorems, in Coq}}
+\date{février-juin 2022}
+\author[Gabrielle Pauvert]{Gabrielle Pauvert\\
+stage encadré par Damien Pous et Yannick Zakowski}
+
+
+\setbeamertemplate{blocks}[rounded][shadow=true]
+\setbeamertemplate{navigation symbols}{}
+
+\newcommand\code[1]{{\fontfamily{lmtt}\selectfont #1}}
+\newcommand\respect[2]{~(#1 ~\Longrightarrow~ #2)~}
+
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Sommaire}
+\small{\tableofcontents}
+\end{frame}
+
+%\section*{Introduction}
+
+\begin{frame}
+\frametitle{Introduction}
+
+\begin{block}{Objectif du stage}
+\begin{itemize}
+\item[->] Développer une bibliothèque générale et modulaire pour Coq sur la théorie des ordres partiels et leurs principaux résultats de points fixes.
+\end{itemize}
+\end{block}
+
+%TODO oral : 
+
+%Du blabla court et pas important sur l'importance des points fixes et des CPOs.
+
+\begin{exampleblock}{Enjeux et utilités}
+\begin{itemize}
+\item regrouper les résultats utilisés dans d'autres projets (coinduction, algèbres relationnelles)
+\item sémantique : donner du sens aux boucles for et while (points fixes de programmes)
+\item logique, optimisation, interprétation abstraite, algorithmie, théorie des catégories etc.
+\end{itemize}
+\end{exampleblock}
+
+\end{frame}
+
+
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+
+
+
+\section{Ordres partiels et points fixes}
+
+
+\subsection{Notions de théorie des ordres partiels}
+
+\begin{frame}
+\frametitle{Quelques notions de théorie des ordres partiels}
+
+\begin{block}{Définitions}
+\begin{itemize}
+\item \textbf{Sous-ensemble dirigé} $D \subseteq X$ : %pour toute paire $x,y$ d'éléments de $S$, il existe un majorant de $\{x, y\}$ dans $D$. 
+$\forall x, y \in D, \exists z \in D, x \leq z \wedge y \leq z$.
+\item \textbf{CPO} $P$ : ensemble ordonné $P = (X, \leq)$ tel que $\bigvee D = sup D$ existe pour tout sous-ensemble dirigé $D \subseteq X$.
+
+\item \textbf{Treillis complet} $L$ : ensemble ordonné tel que $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq L$.
+\end{itemize}
+\end{block}
+
+%TODO oral : passer rapidement sur les défs.
+
+\end{frame}
+
+\begin{frame}
+
+Exemples :
+
+
+\begin{columns}
+\begin{column}{0.5\linewidth}
+
+\begin{figure}[ht]
+\centering
+\resizebox{0.5\linewidth}{!}
+	{
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw](x1) at (-1.25,0.9) {$x_1$};
+   \node[circle, draw](x3) at (-1.25,2.25) {$x_3$};
+   \node[circle, draw](x2) at (1.25,1.5) {$x_2$};
+   %\node[circle, draw, blue](top) at (0,3) {$x_4$};
+
+   %\node[text = blue] (D) at (-3,2) {$D \subseteq X$};
+   %\node[text = red] (vus) at (-4,1) {éléments traités};
+   %\node[text = black] (cand) at (-2.5,-0.9) {candidats};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw (bot) edge[->] node[left, below left] {$\leq$} (x1);
+   \draw (bot) edge[->] node[left, below right] {$\leq$} (x2);
+   \draw (x1) edge[->] node[left, right] {$\leq$} (x3);
+
+   \draw[->] (x1) -- (x3);
+\end{tikzpicture}
+	}
+\caption{CPO}
+\end{figure}
+
+\end{column}	
+\begin{column}{0.5\linewidth}
+
+%\vspace{1.4cm}
+
+\begin{figure}
+\centering
+\resizebox{0.5\linewidth}{!}
+	{
+\begin{tikzpicture}[]
+\node[circle, draw](bot2) at (6,0) {$\bot$};
+   \node[circle, draw](x12) at (4.75,0.9) {$x_1$};
+   \node[circle, draw](x32) at (4.9,2.25) {$x_3$};
+   \node[circle, draw](x22) at (7.25,1.5) {$x_2$};
+   \node[circle, draw](top2) at (6,3) {$x_4$};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot2) -- (x12);
+   \draw[->] (bot2) -- (x22);
+   \draw[->] (x12) -- (x32);
+   \draw[->] (x32) -- (top2);
+   \draw[->] (x22) -- (top2);
+
+   %\node[text = black] (lst1) at (6,-1) {$[x_1]$};
+\end{tikzpicture}
+	}
+\caption{Treillis complet}
+\label{ce}
+\end{figure}
+
+%TODO oral : donner l'exemple de {x1,x2} qui n'est pas dirigé et n'a pas de sup : ok CPO mais pas treillis. Pas le cas pour la deuxième figure.
+%TODO oral : mentionner que tout ordre partiel fini avec un bottom est un CPO de toute façon (pour plus tard).
+
+\end{column}
+\end{columns}
+
+
+
+
+
+
+
+%(F progressive : $\forall x \in X, x \leq F(x)$.) 
+
+%TODO oral : expliquer que c'est aussi un treillis, et que ce n'est même plus un CPO si on enlève top (prendre l'ensemble des entiers positifs). En profiter pour dire qu'on va étudier les fonctions sur les CPOs et leurs points fixes, et expliquer un peu. Plus expliquer le contre exemple.
+
+\end{frame}
+
+\subsection{Les théorèmes de point fixe}
+\begin{frame}
+\frametitle{Les théorèmes de point fixe}
+
+%TODO oral : mentionner Knaster Tarski
+
+\begin{alertblock}{théorème I (simplifié)}
+Soient $P$ un CPO et $F : P \rightarrow P$ une fonction continue sur $P$. Alors $F$ a un plus petit point fixe donné par $\alpha := \bigvee_{n \geq 0}F^n(\bot)$.
+\end{alertblock}
+
+\pause
+\begin{alertblock}{théorème II : Pataraia}
+Soient $P$ un CPO et $F : P \rightarrow P$ une fonction monotone. Alors $F$ a un plus petit point fixe.
+\end{alertblock} %TODO oral : préciser que le code Coq s'éloigne de la preuve proposée par le bouquin, pour faire un hameçon à question. Réviser la méthode de voir P0 comme un point fixe minimal par Knaster Tarski, et pourquoi ça sert (plus).
+
+\pause
+\begin{alertblock}{théorème III : Bourbaki-Witt}
+Soient $P$ un CPO et $F : P \rightarrow P$ une fonction progressive. Alors $F$ a un point fixe. (F progressive : $\forall x \in X, x \leq F(x)$.) 
+
+\end{alertblock}
+
+%TODO oral : Ici, parler aussi en même temps des idées de preuve et des subtilités que ça implique en Coq.
+%(y passer un peu de temps ! LONG !)
+
+
+\end{frame}
+
+
+\begin{frame}
+
+
+%Exemple :
+
+\begin{figure}[ht]
+\centering
+\resizebox{0.8\linewidth}{!}
+	{
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw](0) at (0,1.5) {$0$};
+   \node[circle, draw](1) at (2,1.5) {$1$};
+   \node[circle, draw](2) at (4,1.5) {$2$};
+   \node[](+) at (6,1.5) {$...$};
+   \node[circle, inner sep=2pt, draw](-1) at (-2,1.5) {$-1$};
+   \node[circle, inner sep=2pt, draw](-2) at (-4,1.5) {$-2$};
+   \node[](-) at (-6,1.5) {$...$};
+   \node[circle, draw](top) at (0,3) {$\top$};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot) -- (0);
+   \draw[->] (0) -- (top);
+   \draw[->] (bot) -- (1);
+   \draw[->] (1) -- (top);
+   \draw[->] (bot) -- (2);
+   \draw[->] (2) -- (top);
+   \draw[->] (bot) -- (-1);
+   \draw[->] (-1) -- (top);
+   \draw[->] (bot) -- (-2);
+   \draw[->] (-2) -- (top);
+
+   \draw[->, dashed] (-5.5,1.5) -- (-2);
+   \draw[->] (-2) -- (-1);
+   \draw[->] (-1) -- (0);
+   \draw[->] (0) -- (1);
+   \draw[->] (1) -- (2);
+   \draw[->, dashed] (2) -- (5.5, 1.5);
+
+
+
+%   \node[circle, draw](6) at (4,1) {6};
+   \draw (top) edge[draw = blue, in=70,out=110,loop] node[text = blue, above] {F} ();
+   \draw (2) edge[draw = blue, in=70,out=110,loop] node[text = blue, above] {F} ();
+   \draw (1) edge[draw = blue, in=70,out=110,loop] node[text = blue, above] {F} ();
+   \draw (0) edge[draw = blue, in=70,out=110,loop] (); %node[text = blue, right]  {F} ();
+   \node[text = blue] (-) at (0.5,2) {$F$};
+   \draw (-1) edge[draw = blue, in=70,out=110,loop] node[text = blue, above] {F} ();
+   \draw (-2) edge[draw = blue, in=70,out=110,loop] node[text = blue, above] {F} ();
+   \draw (bot) edge[->, draw = blue, bend left] node[left, text = blue] {F} (0);
+
+%   \node[circle, draw](3) at (6,1) {3};
+%   \node[circle, draw](5) at (6,0) {5};
+   %\draw (2) edge [in=60,out=120,loop] (2);
+\end{tikzpicture}
+	}
+\caption{CPO muni d'une fonction F progressive sans point fixe minimal}
+\label{ce}
+\end{figure}
+
+%(F progressive : $\forall x \in X, x \leq F(x)$.) 
+
+
+\end{frame}
+
+\section{La formalisation en Coq}
+
+\subsection{Les enjeux et problématiques de la formalisation}
+
+\begin{frame}[fragile]
+\frametitle{Les enjeux et problématiques de la formalisation}
+
+\begin{block}{Critères et objectifs}
+\begin{itemize}
+\item \textbf{Universalité} : englober toutes les structures mathématiques de CPO et treillis
+\item<2-> \textbf{Minimalité} des axiomes requis
+\item<3-> \textbf{Calculabilité} (problème avec $ \alpha = \bigvee_{n \geq 0} F^n(\bot)$)
+\end{itemize}
+\end{block}
+
+%\begin{itemize}
+%\item 
+Comment représenter un sous-ensemble $S \subseteq X$ ? 
+
+$\mathbb{1}_S$ \code{: X -> bool} ~~ ou ~~ $... \in S $ \code{: X -> Prop}
+%\end{itemize}
+
+\medskip
+
+\pause
+%\visible<2->{
+%\begin{figure}
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+Axiom classic : forall P:Prop, P \/ ~ P.
+
+Axiom functional_extensionality : forall {A B : Type},
+  forall (f g : A -> B),
+  (forall x, f x = g x) -> f = g.
+\end{lstlisting}
+%}
+%\caption{exemple d'entrée}
+%\label{ex}
+%\end{figure}
+
+%TODO oral : passer du temps à bien expliquer les enjeux de chaque. Si besoin pendant les répétitions, ajouter du contenu dans cette slide ou les suivantes (code ?)
+
+\end{frame}
+
+
+\subsection{Bibliothèque finale proposée}
+
+%\subsection{Structure de valeurs de vérités}
+%\label{verites}
+
+\begin{frame}[fragile]
+
+Définition en Coq :
+
+\frametitle{Ensemble de valeurs de vérité}
+%\scriptsize{
+%\begin{figure}
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+Class B_param := { B : Type; K : Type -> Type;
+  (* Operations basiques sur B *)
+  is_true : B -> Prop;
+  BAnd : B -> B -> B;
+  BAnd_spec : forall b1 b2, is_true b1 /\ is_true b2 
+  	<-> is_true (BAnd b1 b2);
+  [...] (* False, Or, Impl, propriétés sur K *)
+
+  (* Forall and Exists :*)
+  valid_type := { TBody : Type & K TBody};
+  BForall (V : valid_type) : ((V -> B) -> B);  (* /!\ *)
+  [...]   }.
+\end{lstlisting}
+%\caption{exemple d'entrée}
+%\label{ex}
+%\end{figure}
+%}
+
+Cas particuliers : \code{B = Prop} et \code{B = bool}. Autre ? 
+
+Logique de Łukasiewicz ?
+
+%TODO oral : raconter que seul bool et Prop sont pertinents avec cette formalisation de B, que les autres tentatives n'ont pas été concluantes.
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Structures ordonnées}
+%\subsection{Structure d'ordre, de CPO et de treillis}
+
+
+
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+Definition Directed {X} `(leq : X -> X -> B) (D : X -> B) 
+	: Prop := forall x y, 
+	D x -> D y -> exists z, D z /\ x <= z /\ y <= z.
+
+
+Definition directed_set `(leq : X -> X -> B) :=
+	{ Dbody : (X -> B) | (Directed leq Dbody) }.
+
+
+Class B_CPO `(P' : B_PO) := {
+    sup: directed_set leq -> X;
+    sup_spec: forall D z, 
+    			  (sup D <= z <-> forall (y:X), D y -> y <= z);
+  }.
+
+
+Sup: (X -> B) -> X;
+\end{lstlisting}
+
+%TODO oral : s'il y a le temps ici, un peu de blabla sur les tentatives précédentes de formalisation, avec un sup total, avec un sup propositionnel.
+
+\end{frame}
+
+
+
+
+
+
+
+
+
+%\subsection{Formalisations alternatives} --> enlevé pour gagner du temps de présentation sur le reste.
+
+%\subsection{Fonction sup propositionnelle}
+%\subsection{Première paramétrisation : Forall dépendants de l'ensemble support de l'ordre partiel}
+%\label{param}
+
+%\begin{frame}
+%\frametitle{Formalisations alternatives}%ou un titre dans le genre
+
+%TODO
+
+%\end{frame}
+
+
+
+
+
+
+
+\section{Le cas des CPOs finis}
+
+\subsection{Représentation d'un ensemble fini}
+\label{finis}
+
+\begin{frame}[fragile]
+\frametitle{Représentation et résultat principal}
+
+Définition d'un ensemble fini en Coq :
+
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+Record fin X := {
+  eq_dec : forall (a b : X), {a = b} + {a <> b};
+  el : list X;
+  all_el : forall a, List.In a el
+  }.
+\end{lstlisting}
+
+\begin{alertblock}{Proposition}
+Tout ensemble fini muni d'un ordre partiel et d'un élément bottom est un CPO.
+\end{alertblock}
+
+
+%TODO oral : ne pas trop insister, passer rapidement. Mettre surtout en avant le fait qu'on travaille avec des LISTES pour rendre compréhensible l'algorithme de recherche de sup et sa preuve.
+
+\end{frame}
+
+
+\subsection{Ordre partiel fini}
+\label{ordrepartiel}
+
+%\subsubsection{Algorithme utilisé pour obtenir le sup}
+
+\begin{frame}
+\frametitle{Algorithme de recherche d'éléments maximaux}
+
+\only<1>{
+\begin{figure}[ht]
+\centering
+\resizebox{0.4\linewidth}{!}
+	{
+\hspace{-3cm}
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw, blue](x1) at (-1.25,0.9) {$x_1$};
+   \node[circle, draw, blue](x3) at (-1.1,2.25) {$x_3$};
+   \node[circle, draw, blue](x2) at (1.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top) at (0,3) {$x_4$};
+
+   \node[text = blue] (D) at (-4,2) {$D \subseteq X$ (à traiter)};
+   \node[text = red] (vus) at (-4,1) {éléments traités};
+   \node[text = black] (cand) at (-4,-0.9) {candidats max};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot) -- (x1);
+   \draw[->] (bot) -- (x2);
+   \draw[->] (x1) -- (x3);
+   \draw[->] (x3) -- (top);
+   \draw[->] (x2) -- (top);
+
+   \node[text = black] (lst1) at (0,-1) {$[~~]$};
+
+\end{tikzpicture}
+	}
+%\caption{Algorithme de recherche d'éléments maximaux}
+\end{figure}
+
+}
+
+\only<2>{
+\begin{figure}[ht]
+\centering
+\resizebox{0.4\linewidth}{!}
+	{
+\hspace{-3cm}
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw, red](x1) at (-1.25,0.9) {$x_1$};
+   \node[circle, draw, blue](x3) at (-1.1,2.25) {$x_3$};
+   \node[circle, draw, blue](x2) at (1.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top) at (0,3) {$x_4$};
+
+   \node[text = blue] (D) at (-4,2) {à traiter};
+   \node[text = red] (vus) at (-4,1) {éléments traités};
+   \node[text = black] (cand) at (-4,-0.9) {candidats max};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot) -- (x1);
+   \draw[->] (bot) -- (x2);
+   \draw[->] (x1) -- (x3);
+   \draw[->] (x3) -- (top);
+   \draw[->] (x2) -- (top);
+
+   \node[text = black] (lst1) at (0,-1) {$[~ x_1 ~]$};
+
+\end{tikzpicture}
+	}
+%\caption{Algorithme de recherche d'éléments maximaux}
+\end{figure}
+}
+
+\only<3>{
+\begin{figure}[ht]
+\centering
+\resizebox{0.4\linewidth}{!}
+	{
+\hspace{-3cm}
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw, red](x1) at (-1.25,0.9) {$x_1$};
+   \node[circle, draw, blue](x3) at (-1.1,2.25) {$x_3$};
+   \node[circle, draw, red](x2) at (1.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top) at (0,3) {$x_4$};
+
+   \node[text = blue] (D) at (-4,2) {à traiter};
+   \node[text = red] (vus) at (-4,1) {éléments traités};
+   \node[text = black] (cand) at (-4,-0.9) {candidats max};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot) -- (x1);
+   \draw[->] (bot) -- (x2);
+   \draw[->] (x1) -- (x3);
+   \draw[->] (x3) -- (top);
+   \draw[->] (x2) -- (top);
+
+   \node[text = black] (lst1) at (0,-1) {$[~ x_1, x_2 ~]$};
+
+\end{tikzpicture}
+	}
+%\caption{Algorithme de recherche d'éléments maximaux}
+\end{figure}
+}
+
+\only<4>{
+\begin{figure}[ht]
+\centering
+\resizebox{0.4\linewidth}{!}
+	{
+\hspace{-3cm}
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw, red](x1) at (-1.25,0.9) {$x_1$};
+   \node[circle, draw, red](x3) at (-1.1,2.25) {$x_3$};
+   \node[circle, draw, red](x2) at (1.25,1.5) {$x_2$};
+   \node[circle, draw, blue](top) at (0,3) {$x_4$};
+
+   \node[text = blue] (D) at (-4,2) {à traiter};
+   \node[text = red] (vus) at (-4,1) {éléments traités};
+   \node[text = black] (cand) at (-4,-0.9) {candidats max};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot) -- (x1);
+   \draw[->] (bot) -- (x2);
+   \draw[->] (x1) -- (x3);
+   \draw[->] (x3) -- (top);
+   \draw[->] (x2) -- (top);
+
+   \node[text = black] (lst1) at (0,-1) {$[~ x_3, x_2 ~]$};
+
+\end{tikzpicture}
+	}
+%\caption{Algorithme de recherche d'éléments maximaux}
+\end{figure}
+}
+
+\only<5>{
+\begin{figure}[ht]
+\centering
+\resizebox{0.4\linewidth}{!}
+	{
+\hspace{-3cm}
+\begin{tikzpicture}[]
+   \node[circle, draw](bot) at (0,0) {$\bot$};
+   \node[circle, draw, red](x1) at (-1.25,0.9) {$x_1$};
+   \node[circle, draw, red](x3) at (-1.1,2.25) {$x_3$};
+   \node[circle, draw, red](x2) at (1.25,1.5) {$x_2$};
+   \node[circle, draw, red](top) at (0,3) {$x_4$};
+
+   \node[text = blue] (D) at (-4,2) {à traiter};
+   \node[text = red] (vus) at (-4,1) {éléments traités};
+   \node[text = black] (cand) at (-4,-0.9) {candidats max};
+
+%   \draw (0) edge [in=60,out=120,loop] (0);
+   \draw[->] (bot) -- (x1);
+   \draw[->] (bot) -- (x2);
+   \draw[->] (x1) -- (x3);
+   \draw[->] (x3) -- (top);
+   \draw[->] (x2) -- (top);
+
+   \node[text = black] (lst1) at (0,-1) {$[~ x_4 ~]$};
+
+\end{tikzpicture}
+	}
+%\caption{Algorithme de recherche d'éléments maximaux}
+\end{figure}
+}
+
+%TODO oral : bien préciser que l'on obtient les éléments maximaux, pas forcément un sup. Il faut aussi que l'ensemble soit dirigé pour ça. Cf preuve.
+   
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Preuve de correction}
+
+Les étapes de la preuve :
+
+\begin{itemize}
+\item[1.] les éléments de la liste sont deux à deux incomparables
+\item[2.] les éléments appartiennent à $D$
+\item[3.] la liste ne contient pas de dupliqués
+\item[4.] tout élément de $D$ est inférieur à un des éléments de la liste 
+\item[5.] si $D$ est dirigé, la liste finale contient au plus un élément
+\end{itemize}
+
+\bigskip
+
+Invariant principal (point 4.) :
+
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+Lemma main_invariant D : forall lst x, D x -> 
+	not (In x lst) \/ 
+	exists y, In y (elem_max D lst nil) /\ x <= y.
+\end{lstlisting}
+
+\end{frame}
+
+
+%\section*{Conclusion}
+
+\begin{frame}
+\frametitle{Conclusion}
+
+
+\centering
+Merci de votre attention.
+
+\bigskip
+
+Des questions ?
+
+\end{frame}
+
+
+
+\end{document}
