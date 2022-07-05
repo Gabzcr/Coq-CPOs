@@ -58,10 +58,6 @@ stage encadré par Damien Pous et Yannick Zakowski}
 \titlepage
 \end{frame}
 
-\begin{frame}
-\frametitle{Sommaire}
-\small{\tableofcontents}
-\end{frame}
 
 %\section*{Introduction}
 
@@ -74,10 +70,6 @@ stage encadré par Damien Pous et Yannick Zakowski}
 \end{itemize}
 \end{block}
 
-%TODO oral : 
-
-%Du blabla court et pas important sur l'importance des points fixes et des CPOs.
-
 \begin{exampleblock}{Enjeux et utilités}
 \begin{itemize}
 \item regrouper les résultats utilisés dans d'autres projets (coinduction, algèbres relationnelles)
@@ -86,6 +78,12 @@ stage encadré par Damien Pous et Yannick Zakowski}
 \end{itemize}
 \end{exampleblock}
 
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Sommaire}
+\small{\tableofcontents}
 \end{frame}
 
 
@@ -116,7 +114,7 @@ stage encadré par Damien Pous et Yannick Zakowski}
 $\forall x, y \in D, \exists z \in D, x \leq z \wedge y \leq z$.
 \item \textbf{CPO} $P$ : ensemble ordonné $P = (X, \leq)$ tel que $\bigvee D = sup D$ existe pour tout sous-ensemble dirigé $D \subseteq X$.
 
-\item \textbf{Treillis complet} $L$ : ensemble ordonné tel que $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq L$.
+\item \textbf{Treillis complet} $L$ : ensemble ordonné $L = (Y, \leq)$ tel que $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq Y$.
 \end{itemize}
 \end{block}
 
@@ -210,6 +208,11 @@ Exemples :
 \begin{frame}
 \frametitle{Les théorèmes de point fixe}
 
+\textbf{Point fixe} $x \in X$ : $F(x) = x$. F \textbf{progressive} : $\forall x \in X, x \leq F(x)$.
+
+F \textbf{monotone} : $\forall x, y \in X, x \leq y \implies F(x) \leq F(y)$.
+
+
 %TODO oral : mentionner Knaster Tarski
 
 \begin{alertblock}{théorème I (simplifié)}
@@ -223,7 +226,7 @@ Soient $P$ un CPO et $F : P \rightarrow P$ une fonction monotone. Alors $F$ a un
 
 \pause
 \begin{alertblock}{théorème III : Bourbaki-Witt}
-Soient $P$ un CPO et $F : P \rightarrow P$ une fonction progressive. Alors $F$ a un point fixe. (F progressive : $\forall x \in X, x \leq F(x)$.) 
+Soient $P$ un CPO et $F : P \rightarrow P$ une fonction progressive. Alors $F$ a un point fixe.
 
 \end{alertblock}
 
@@ -236,6 +239,7 @@ Soient $P$ un CPO et $F : P \rightarrow P$ une fonction progressive. Alors $F$ a
 
 \begin{frame}
 
+Théorème de Bourbaki-Witt : existence de point fixe sans garanti de minimalité.
 
 %Exemple :
 
@@ -308,31 +312,34 @@ Soient $P$ un CPO et $F : P \rightarrow P$ une fonction progressive. Alors $F$ a
 
 \begin{block}{Critères et objectifs}
 \begin{itemize}
-\item \textbf{Universalité} : englober toutes les structures mathématiques de CPO et treillis
-\item<2-> \textbf{Minimalité} des axiomes requis
-\item<3-> \textbf{Calculabilité} (problème avec $ \alpha = \bigvee_{n \geq 0} F^n(\bot)$)
+\item \textbf{Minimalité} des axiomes requis
+\item<2-> \textbf{Calculabilité} (problème avec $ \alpha = \bigvee_{n \geq 0} F^n(\bot)$)
+\item<3-> \textbf{Universalité} : englober toutes les structures mathématiques de CPO et treillis
 \end{itemize}
 \end{block}
 
 %\begin{itemize}
 %\item 
+\visible<3->{
+\medskip
+
 Comment représenter un sous-ensemble $S \subseteq X$ ? 
 
 $\mathbb{1}_S$ \code{: X -> bool} ~~ ou ~~ $... \in S $ \code{: X -> Prop}
 %\end{itemize}
+}
+%\medskip
 
-\medskip
-
-\pause
+%\pause
 %\visible<2->{
 %\begin{figure}
-\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
-Axiom classic : forall P:Prop, P \/ ~ P.
+%\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+%Axiom classic : forall P:Prop, P \/ ~ P.
 
-Axiom functional_extensionality : forall {A B : Type},
-  forall (f g : A -> B),
-  (forall x, f x = g x) -> f = g.
-\end{lstlisting}
+%Axiom functional_extensionality : forall {A B : Type},
+%  forall (f g : A -> B),
+%  (forall x, f x = g x) -> f = g.
+%\end{lstlisting}
 %}
 %\caption{exemple d'entrée}
 %\label{ex}
@@ -349,68 +356,98 @@ Axiom functional_extensionality : forall {A B : Type},
 %\label{verites}
 
 \begin{frame}[fragile]
-
-Définition en Coq :
-
 \frametitle{Ensemble de valeurs de vérité}
+
+
+\only<1> {Pour réconcilier bool et Prop : paramétrisation par un domaine de valeurs de vérité.
+
+\medskip}
+
 %\scriptsize{
 %\begin{figure}
+
+\begin{onlyenv}<1>
 \begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
-Class B_param := { B : Type; K : Type -> Type;
+Class B_param := { B : Type;
   (* Operations basiques sur B *)
   is_true : B -> Prop;
   BAnd : B -> B -> B;
   BAnd_spec : forall b1 b2, is_true b1 /\ is_true b2 
   	<-> is_true (BAnd b1 b2);
-  [...] (* False, Or, Impl, propriétés sur K *)
-
-  (* Forall and Exists :*)
-  valid_type := { TBody : Type & K TBody};
-  BForall (V : valid_type) : ((V -> B) -> B);  (* /!\ *)
-  [...]   }.
+  [...] (* False, Or, Impl, ... *)
+  }.
 \end{lstlisting}
+
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+Class B_CL `(P' : B_PO) := {
+    Sup: (X -> B) -> X;
+    sup_spec: forall D z, 
+    			  (sup D <= z <-> forall (y:X), D y -> y <= z);
+  }.
+\end{lstlisting}
+
+
+\end{onlyenv}
 %\caption{exemple d'entrée}
 %\label{ex}
 %\end{figure}
 %}
 
+\begin{onlyenv}<2->
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+Class B_param := { B : Type;
+  (* Operations basiques sur B *)
+  is_true : B -> Prop;
+  BAnd : B -> B -> B;
+  [...] (* False, Or, Impl *)
+
+  (* Forall and Exists :*)
+  K : Type -> Type;
+  BForall : forall V, K V -> (V -> B) -> B (* /!\ *)
+  [...]  (*specs et proprietes sur K *) }.
+\end{lstlisting}
+\end{onlyenv}
+
+\only<3>{
 Cas particuliers : \code{B = Prop} et \code{B = bool}. Autre ? 
 
-Logique de Łukasiewicz ?
+Logique de Łukasiewicz ?}
 
 %TODO oral : raconter que seul bool et Prop sont pertinents avec cette formalisation de B, que les autres tentatives n'ont pas été concluantes.
 
 \end{frame}
 
-\begin{frame}[fragile]
-\frametitle{Structures ordonnées}
+
+%
+%\begin{frame}[fragile]
+%\frametitle{Structures ordonnées}
 %\subsection{Structure d'ordre, de CPO et de treillis}
 
 
 
-\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
-Definition Directed {X} `(leq : X -> X -> B) (D : X -> B) 
-	: Prop := forall x y, 
-	D x -> D y -> exists z, D z /\ x <= z /\ y <= z.
+%\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+%Definition Directed {X} `(leq : X -> X -> B) (D : X -> B) 
+%	: Prop := forall x y, 
+%	D x -> D y -> exists z, D z /\ x <= z /\ y <= z.
 
 
-Definition directed_set `(leq : X -> X -> B) :=
-	{ Dbody : (X -> B) | (Directed leq Dbody) }.
+%Definition directed_set `(leq : X -> X -> B) :=
+%	{ Dbody : (X -> B) | (Directed leq Dbody) }.
 
 
-Class B_CPO `(P' : B_PO) := {
-    sup: directed_set leq -> X;
-    sup_spec: forall D z, 
-    			  (sup D <= z <-> forall (y:X), D y -> y <= z);
-  }.
+%Class B_CPO `(P' : B_PO) := {
+%    sup: directed_set leq -> X;
+%    sup_spec: forall D z, 
+%    			  (sup D <= z <-> forall (y:X), D y -> y <= z);
+%  }.
 
 
-Sup: (X -> B) -> X;
-\end{lstlisting}
+%Sup: (X -> B) -> X;
+%\end{lstlisting}
 
 %TODO oral : s'il y a le temps ici, un peu de blabla sur les tentatives précédentes de formalisation, avec un sup total, avec un sup propositionnel.
 
-\end{frame}
+%\end{frame}
 
 
 
@@ -643,7 +680,11 @@ Tout ensemble fini muni d'un ordre partiel et d'un élément bottom est un CPO.
 \begin{frame}[fragile]
 \frametitle{Preuve de correction}
 
-Les étapes de la preuve :
+\textbf{Théorème :} Tout ensemble fini muni d'un ordre partiel et d'un élément bottom est un CPO.
+
+\medskip
+
+Étapes de la preuve :
 
 \begin{itemize}
 \item[1.] les éléments de la liste sont deux à deux incomparables
@@ -653,7 +694,7 @@ Les étapes de la preuve :
 \item[5.] si $D$ est dirigé, la liste finale contient au plus un élément
 \end{itemize}
 
-\bigskip
+\medskip
 
 Invariant principal (point 4.) :
 
