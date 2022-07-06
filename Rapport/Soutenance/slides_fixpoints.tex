@@ -73,7 +73,7 @@ stage encadré par Damien Pous et Yannick Zakowski}
 \begin{exampleblock}{Enjeux et utilités}
 \begin{itemize}
 \item regrouper les résultats utilisés dans d'autres projets (coinduction, algèbres relationnelles)
-\item sémantique : donner du sens aux boucles for et while (points fixes de programmes)
+\item sémantique : donner du sens aux boucles while et aux récursions (points fixes de programmes)
 \item logique, optimisation, interprétation abstraite, algorithmie, théorie des catégories etc.
 \end{itemize}
 \end{exampleblock}
@@ -110,11 +110,16 @@ stage encadré par Damien Pous et Yannick Zakowski}
 
 \begin{block}{Définitions}
 \begin{itemize}
-\item \textbf{Sous-ensemble dirigé} $D \subseteq X$ : %pour toute paire $x,y$ d'éléments de $S$, il existe un majorant de $\{x, y\}$ dans $D$. 
-$\forall x, y \in D, \exists z \in D, x \leq z \wedge y \leq z$.
-\item \textbf{CPO} $P$ : ensemble ordonné $P = (X, \leq)$ tel que $\bigvee D = sup D$ existe pour tout sous-ensemble dirigé $D \subseteq X$.
+\item<1-> \textbf{Ordre Partiel} : relation binaire réflexive, transitive et antisymétrique.
+\item<1-> \textbf{Treillis complet} $L$ : ensemble ordonné $L = (Y, \leq)$ tel que $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq Y$.
 
-\item \textbf{Treillis complet} $L$ : ensemble ordonné $L = (Y, \leq)$ tel que $\bigvee S$ et $\bigwedge S$ existent pour tout sous-ensemble $S \subseteq Y$.
+\medskip
+
+\item<2-> \textbf{Sous-ensemble dirigé} $D \subseteq X$ : %pour toute paire $x,y$ d'éléments de $S$, il existe un majorant de $\{x, y\}$ dans $D$. 
+$\forall x, y \in D, \exists z \in D, x \leq z \wedge y \leq z$.
+\item<2-> \textbf{CPO} $P$ : ensemble ordonné $P = (X, \leq)$ tel que $\bigvee D = sup D$ existe pour tout sous-ensemble dirigé $D \subseteq X$.
+
+
 \end{itemize}
 \end{block}
 
@@ -205,30 +210,60 @@ Exemples :
 \end{frame}
 
 \subsection{Les théorèmes de point fixe}
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{Les théorèmes de point fixe}
 
+%TODO oral : mentionner Knaster Tarski
+\only<1,2,4>{
 \textbf{Point fixe} $x \in X$ : $F(x) = x$. F \textbf{progressive} : $\forall x \in X, x \leq F(x)$.
 
 F \textbf{monotone} : $\forall x, y \in X, x \leq y \implies F(x) \leq F(y)$.
 
 
-%TODO oral : mentionner Knaster Tarski
-
 \begin{alertblock}{théorème I (simplifié)}
 Soient $P$ un CPO et $F : P \rightarrow P$ une fonction continue sur $P$. Alors $F$ a un plus petit point fixe donné par $\alpha := \bigvee_{n \geq 0}F^n(\bot)$.
 \end{alertblock}
+}
 
-\pause
+\only<1,2,4>{
+\visible<2,4>{
 \begin{alertblock}{théorème II : Pataraia}
 Soient $P$ un CPO et $F : P \rightarrow P$ une fonction monotone. Alors $F$ a un plus petit point fixe.
 \end{alertblock} %TODO oral : préciser que le code Coq s'éloigne de la preuve proposée par le bouquin, pour faire un hameçon à question. Réviser la méthode de voir P0 comme un point fixe minimal par Knaster Tarski, et pourquoi ça sert (plus).
+}
+}
 
-\pause
+\begin{onlyenv}<3>
+Preuve de Pataraia : en deux principales étapes.
+\begin{itemize}
+\item Montrer que les fonctions monotones et progressives sur un même CPO ont un point fixe (commun).
+\item Restreindre $F$ monotone à un sous-CPO \code{PF} sur lequel elle est progressive.
+\end{itemize}
+
+\medskip
+
+Concrètement :
+
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+ Definition PF x := forall Y, Invariant F Y -> is_subCPO Y 
+ 	-> Y x.  (*P0 is the smallest F-invariant subCPO*)
+ 
+ Definition H_sup := (sup (CPO := CPO_mon PF) 
+                          Increasing_functions).
+                          
+ Definition fixpoint_II := (H_sup bot).
+\end{lstlisting}
+
+\end{onlyenv}
+
+\only<1,2,4>{
+\visible<4>{
 \begin{alertblock}{théorème III : Bourbaki-Witt}
 Soient $P$ un CPO et $F : P \rightarrow P$ une fonction progressive. Alors $F$ a un point fixe.
 
 \end{alertblock}
+}
+}
 
 %TODO oral : Ici, parler aussi en même temps des idées de preuve et des subtilités que ça implique en Coq.
 %(y passer un peu de temps ! LONG !)
@@ -379,10 +414,10 @@ Class B_param := { B : Type;
 \end{lstlisting}
 
 \begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
-Class B_CL `(P' : B_PO) := {
+Class B_CL (B : B_param) P' := {
     Sup: (X -> B) -> X;
     sup_spec: forall D z, 
-    			  (sup D <= z <-> forall (y:X), D y -> y <= z);
+    			  (sup D <= z <-> forall y, D y -> y <= z);
   }.
 \end{lstlisting}
 
@@ -408,10 +443,13 @@ Class B_param := { B : Type;
 \end{lstlisting}
 \end{onlyenv}
 
-\only<3>{
-Cas particuliers : \code{B = Prop} et \code{B = bool}. Autre ? 
+\only<2>{
+\code{B = Prop} -> K prend tous les types;
 
-Logique de Łukasiewicz ?}
+\code{B = bool} -> K sélectionne les types finis. %Autre ? 
+
+%Logique de Łukasiewicz ?
+}
 
 %TODO oral : raconter que seul bool et Prop sont pertinents avec cette formalisation de B, que les autres tentatives n'ont pas été concluantes.
 
@@ -488,7 +526,7 @@ Définition d'un ensemble fini en Coq :
 
 \begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
 Record fin X := {
-  eq_dec : forall (a b : X), {a = b} + {a <> b};
+  eq_dec : forall (a b : X), {a = b} + {a $\neq$ b};
   el : list X;
   all_el : forall a, List.In a el
   }.
@@ -709,16 +747,66 @@ Lemma main_invariant D : forall lst x, D x ->
 
 %\section*{Conclusion}
 
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{Conclusion}
 
+\begin{block}{En résumé}
+\begin{itemize}
+\item[->] Conception d'une bibliothèque générale sur les ordres partiels (dont CPOs et thms de points fixes).
+\end{itemize}
+\end{block}
 
+Exemple concret de calcul de point fixe minimal, sur le CPO à trois éléments $\{\bot, x_1, \top\}$. %: $\bot ~ \leq ~ x_1 ~ \leq ~ \top$.
+
+\medskip
+
+\begin{columns}
+
+\begin{column}{0.5\linewidth}
+
+\usetikzlibrary {arrows.meta,automata,positioning}
+\begin{figure}[ht]
 \centering
-Merci de votre attention.
+\resizebox{0.3\linewidth}{!}
+	{
+\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,>={Stealth[round]},
+    every state/.style={draw=black!50,very thick}]
 
-\bigskip
+  \node[state]  (bot)                      {$\bot$};
+  \node[state]          (x) [above =of bot] {$x$};
+  \node[state]          (top) [above =of x] {$\top$};
 
-Des questions ?
+  \path[->] (bot) edge              node [right]  {$\leq$} (x)
+            (x)      edge              node [right]  {$\leq$} (top)
+            (top) edge [loop above, draw = blue, thick] node[text = blue]   {F} ()
+            (x) edge [loop right, draw = blue, thick] node[text = blue]  {F} ()
+            (bot) edge [bend left, draw = blue, thick] node[text = blue, left]  {F} (top) ;
+\end{tikzpicture}
+	}
+%\caption{Top de $P_F$ non minimal pour $F$ progressive}
+\end{figure}
+
+\end{column}
+
+\begin{column}{0.5\linewidth}
+
+\begin{lstlisting}[frame=single, language = Coq, basicstyle=\scriptsize]
+set (xf := lfp_II F).
+vm_compute in xf.
+
+xf := x.
+\end{lstlisting}
+
+\end{column}
+\end{columns}
+
+
+%\centering
+%Merci de votre attention.
+
+%\bigskip
+
+%Des questions ?
 
 \end{frame}
 
